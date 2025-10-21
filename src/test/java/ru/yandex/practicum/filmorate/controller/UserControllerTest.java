@@ -34,7 +34,7 @@ class UserControllerTest {
 
     @Nested
     @DisplayName("Тесты метода create")
-    class testsForCreateUser {
+    class TestsForCreateUser {
         @Test
         @DisplayName("Проверяем создание валидного пользователя")
         void create_Valid_User_Test() {
@@ -157,7 +157,7 @@ class UserControllerTest {
 
     @Nested
     @DisplayName("Тесты метода update")
-    class testsForUpdateUser {
+    class TestsForUpdateUser {
         @Test
         @DisplayName("Проверяем обновление валидного пользователя валидными данными")
         void update_Valid_User_Valid_Data_Test() {

@@ -34,7 +34,7 @@ class FilmControllerTest {
 
     @Nested
     @DisplayName("Тесты метода create")
-    class testsForCreateFilm {
+    class TestsForCreateFilm {
         @Test
         @DisplayName("Проверяем создание валидного фильма")
         void create_Valid_Film_Test() {
@@ -216,7 +216,7 @@ class FilmControllerTest {
 
     @Nested
     @DisplayName("Тесты метода update")
-    class testsForUpdateFilm {
+    class TestsForUpdateFilm {
         @Test
         @DisplayName("Проверяем обновление валидного фильма валидными данными")
         void update_Valid_Film_Valid_Data_Test() {
