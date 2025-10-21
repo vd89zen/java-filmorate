@@ -21,6 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class FilmController {
     private final ConcurrentHashMap<Long, Film> films = new ConcurrentHashMap<>();
     private static final LocalDate MOVIE_BIRTHDAY = LocalDate.of(1895, 12, 28);
+
     private synchronized long getNextId() {
         return films.isEmpty()
                 ? 1
