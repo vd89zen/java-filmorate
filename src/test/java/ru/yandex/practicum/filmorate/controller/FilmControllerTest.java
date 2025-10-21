@@ -84,7 +84,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("description", violation.getPropertyPath().toString());
@@ -105,7 +105,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("description", violation.getPropertyPath().toString());
@@ -126,7 +126,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("name", violation.getPropertyPath().toString());
@@ -164,7 +164,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("releaseDate", violation.getPropertyPath().toString());
@@ -185,7 +185,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("duration", violation.getPropertyPath().toString());
@@ -206,7 +206,7 @@ class FilmControllerTest {
             //When
             Set<ConstraintViolation<Film>> violations = validator.validate(film);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<Film> violation = violations.iterator().next();
             assertEquals("duration", violation.getPropertyPath().toString());

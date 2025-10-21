@@ -21,7 +21,7 @@ public class UserController {
     private final ConcurrentHashMap<Long, User> users = new ConcurrentHashMap<>();
 
     private synchronized long getNextId() {
-        return users.keySet().isEmpty()
+        return users.isEmpty()
                 ? 1
                 : Collections.max(users.keySet()) + 1;
     }

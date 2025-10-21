@@ -22,7 +22,7 @@ public class FilmController {
     private final ConcurrentHashMap<Long, Film> films = new ConcurrentHashMap<>();
     private static final LocalDate MOVIE_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private synchronized long getNextId() {
-        return films.keySet().isEmpty()
+        return films.isEmpty()
                 ? 1
                 : Collections.max(films.keySet()) + 1;
     }

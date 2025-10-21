@@ -86,7 +86,7 @@ class UserControllerTest {
             //When
             Set<ConstraintViolation<User>> violations = validator.validate(user);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<User> violation = violations.iterator().next();
             assertEquals("email", violation.getPropertyPath().toString());
@@ -107,7 +107,7 @@ class UserControllerTest {
             //When
             Set<ConstraintViolation<User>> violations = validator.validate(user);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<User> violation = violations.iterator().next();
             assertEquals("login", violation.getPropertyPath().toString());
@@ -128,7 +128,7 @@ class UserControllerTest {
             //When
             Set<ConstraintViolation<User>> violations = validator.validate(user);
             //Then
-            assertTrue(!violations.isEmpty(), "Ожидались ошибки валидации.");
+            assertFalse(violations.isEmpty(), "Ожидались ошибки валидации.");
             assertEquals(1, violations.size(), "Ожидалась одна ошибка валидации.");
             ConstraintViolation<User> violation = violations.iterator().next();
             assertEquals("birthday", violation.getPropertyPath().toString());
