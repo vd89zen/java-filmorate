@@ -3,78 +3,71 @@ package ru.yandex.practicum.filmorate.controller;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import org.springframework.http.HttpStatus;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.error.ValidationError;
-import ru.yandex.practicum.filmorate.exception.NotFoundException;
-import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.service.UserService;
 import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
 
+@Slf4j
+@Validated
 @RestController
 @RequestMapping("/users")
-@Validated
-@Slf4j
 public class UserController {
-    private final ConcurrentHashMap<Long, User> users = new ConcurrentHashMap<>();
+    private final UserService userService;
 
-    private synchronized long getNextId() {
-        return users.isEmpty()
-                ? 1
-                : Collections.max(users.keySet()) + 1;
-    }
-
-    @GetMapping
-    @Cacheable("users")
-    public Collection<User> findAll() {
-        return users.values();
+    public UserController(UserService userService) {
+        this.userService = userService;
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @CacheEvict(value = "users", allEntries = true)
     public User create(@Valid @RequestBody User newUser) {
-        log.info("Попытка создания нового пользователя: {}", newUser);
-
-        if (newUser.getId() != null) {
-            throw new ValidationException(ValidationError.builder()
-                    .field("id")
-                    .message("При создании нового пользователя, id должен быть null.")
-                    .rejectedValue(newUser.getId())
-                    .build());
-        }
-
-        newUser.setId(getNextId());
-
-        if (newUser.getName() == null || newUser.getName().isEmpty()) {
-            newUser.setName(newUser.getLogin());
-            log.info("Так как имя пользователя не указано, для него использован login.");
-        }
-
-        users.put(newUser.getId(), newUser);
-        log.info("Успешно создан новый пользователь {}.", newUser);
-        return newUser;
+        return userService.create(newUser);
     }
 
     @PutMapping
+    @ResponseStatus(HttpStatus.OK)
+    @CacheEvict(value = "users", key = "#user.id")
     public User update(@Valid @RequestBody User user) {
-        log.info("Попытка обновления пользователя: {}.", user);
+        return userService.update(user);
+    }
 
-        if (user.getId() == null) {
-            throw new ValidationException(ValidationError.builder()
-                    .field("id")
-                    .message("Не указан Id.")
-                    .rejectedValue(null)
-                    .build());
-        }
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public User findById(@PathVariable long id) {
+        return userService.findById(id);
+    }
 
-        if (users.containsKey(user.getId())) {
-            users.put(user.getId(), user);
-            log.info("Успешно обновлён пользователь: {}.", user);
-            return user;
-        } else {
-            throw new NotFoundException(String.format("Пользователь с id = %d не найден.", user.getId()));
-        }
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public Collection<User> findAll() {
+        return userService.findAll();
+    }
+
+    @PutMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void addFriend(@PathVariable long id, @PathVariable long friendId) {
+        userService.addFriend(id, friendId);
+    }
+
+    @DeleteMapping("/{id}/friends/{friendId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void removeFriend(@PathVariable long id, @PathVariable long friendId) {
+        userService.removeFriend(id, friendId);
+    }
+
+    @GetMapping("/{id}/friends")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> getFriends(@PathVariable long id) {
+        return userService.getFriends(id);
+    }
+
+    @GetMapping("/{id}/friends/common/{otherId}")
+    @ResponseStatus(HttpStatus.OK)
+    public List<User> getCommonFriends(@PathVariable long id, @PathVariable long otherId) {
+        return userService.getCommonFriends(id, otherId);
     }
 }
