@@ -12,8 +12,8 @@ import ru.yandex.practicum.filmorate.exception.ValidationException;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@RestControllerAdvice
 @Slf4j
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
     @ResponseStatus(HttpStatus.BAD_REQUEST)
@@ -23,7 +23,7 @@ public class GlobalExceptionHandler {
                     .map(this::extractValidationError)
                     .collect(Collectors.toList());
 
-        log.error("Произошла ошибка валидации: {}", errors);
+        log.error("Произошла ошибка валидации (MethodArgumentNotValid): {}", errors);
         return new ErrorResponse(errors);
     }
 
@@ -71,4 +71,5 @@ public class GlobalExceptionHandler {
                 fieldError.getRejectedValue()
         );
     }
+
 }
