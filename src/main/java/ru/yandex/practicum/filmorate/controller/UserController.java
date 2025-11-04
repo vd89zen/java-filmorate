@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.User;
@@ -22,52 +23,54 @@ public class UserController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @CacheEvict(value = "users", allEntries = true)
-    public User create(@Valid @RequestBody User newUser) {
-        return userService.create(newUser);
+    public ResponseEntity<User> create(@Valid @RequestBody User newUser) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(userService.create(newUser));
     }
 
     @PutMapping
-    @ResponseStatus(HttpStatus.OK)
     @CacheEvict(value = "users", key = "#user.id")
-    public User update(@Valid @RequestBody User user) {
-        return userService.update(user);
+    public ResponseEntity<User> update(@Valid @RequestBody User user) {
+        return ResponseEntity
+                .ok(userService.update(user));
     }
 
     @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public User findById(@PathVariable long id) {
-        return userService.findById(id);
+    public ResponseEntity<User> findById(@PathVariable long id) {
+        return ResponseEntity
+                .ok(userService.findById(id));
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
-    public Collection<User> findAll() {
-        return userService.findAll();
+    public ResponseEntity<Collection<User>> findAll() {
+        return ResponseEntity
+                .ok(userService.findAll());
     }
 
     @PutMapping("/{id}/friends/{friendId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addFriend(@PathVariable long id, @PathVariable long friendId) {
+    public ResponseEntity<Void> addFriend(@PathVariable long id, @PathVariable long friendId) {
         userService.addFriend(id, friendId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/friends/{friendId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeFriend(@PathVariable long id, @PathVariable long friendId) {
+    public ResponseEntity<Void> removeFriend(@PathVariable long id, @PathVariable long friendId) {
         userService.removeFriend(id, friendId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/friends")
-    @ResponseStatus(HttpStatus.OK)
-    public List<User> getFriends(@PathVariable long id) {
-        return userService.getFriends(id);
+    public ResponseEntity<List<User>> getFriends(@PathVariable long id) {
+        return ResponseEntity
+                .ok(userService.getFriends(id));
     }
 
     @GetMapping("/{id}/friends/common/{otherId}")
     @ResponseStatus(HttpStatus.OK)
-    public List<User> getCommonFriends(@PathVariable long id, @PathVariable long otherId) {
-        return userService.getCommonFriends(id, otherId);
+    public ResponseEntity<List<User>> getCommonFriends(@PathVariable long id, @PathVariable long otherId) {
+        return ResponseEntity
+                .ok(userService.getCommonFriends(id, otherId));
     }
 }

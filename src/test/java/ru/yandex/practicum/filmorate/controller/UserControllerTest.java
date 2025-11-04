@@ -57,7 +57,7 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
             //When
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             //Then
             assertNotNull(createdUser.getId());
             assertEquals(user.getEmail(), createdUser.getEmail());
@@ -160,7 +160,7 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
             //When
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             //Then
             assertNotNull(createdUser.getName());
             assertEquals(createdUser.getName(), createdUser.getLogin());
@@ -183,11 +183,11 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             String expectedName = "updatedName";
             //When
             createdUser.setName(expectedName);
-            User actualUser = userController.update(createdUser);
+            User actualUser = userController.update(createdUser).getBody();
             //Then
             assertEquals(expectedName, actualUser.getName());
         }
@@ -244,10 +244,10 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             // When
-            User foundUser = userController.findById(userId);
+            User foundUser = userController.findById(userId).getBody();
             // Then
             assertNotNull(foundUser);
             assertEquals(userId, foundUser.getId());
@@ -293,7 +293,7 @@ class UserControllerTest {
             userController.create(user1);
             userController.create(user2);
             // When
-            Collection<User> allUsers = userController.findAll();
+            Collection<User> allUsers = userController.findAll().getBody();
             // Then
             assertNotNull(allUsers);
             assertEquals(2, allUsers.size());
@@ -326,15 +326,15 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser1 = userController.create(user1);
-            User createdUser2 = userController.create(user2);
+            User createdUser1 = userController.create(user1).getBody();
+            User createdUser2 = userController.create(user2).getBody();
             long userId1 = createdUser1.getId();
             long userId2 = createdUser2.getId();
             // When
             userController.addFriend(userId1, userId2);
             // Then
-            List<User> friendsOfUser1 = userController.getFriends(userId1);
-            List<User> friendsOfUser2 = userController.getFriends(userId2);
+            List<User> friendsOfUser1 = userController.getFriends(userId1).getBody();
+            List<User> friendsOfUser2 = userController.getFriends(userId2).getBody();
 
             assertEquals(1, friendsOfUser1.size());
             assertEquals(userId2, friendsOfUser1.get(0).getId());
@@ -354,7 +354,7 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             // When, Then
             assertThrows(ValidationException.class, () -> {
@@ -374,7 +374,7 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long existingUserId = createdUser.getId();
             long nonExistingUserId = 666L;
             // When, Then
@@ -408,16 +408,16 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser1 = userController.create(user1);
-            User createdUser2 = userController.create(user2);
+            User createdUser1 = userController.create(user1).getBody();
+            User createdUser2 = userController.create(user2).getBody();
             long userId1 = createdUser1.getId();
             long userId2 = createdUser2.getId();
             userController.addFriend(userId1, userId2);
             // When
             userController.removeFriend(userId1, userId2);
             // Then
-            List<User> friendsOfUser1 = userController.getFriends(userId1);
-            List<User> friendsOfUser2 = userController.getFriends(userId2);
+            List<User> friendsOfUser1 = userController.getFriends(userId1).getBody();
+            List<User> friendsOfUser2 = userController.getFriends(userId2).getBody();
             assertTrue(friendsOfUser1.isEmpty());
             assertTrue(friendsOfUser2.isEmpty());
         }
@@ -434,7 +434,7 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             // When, Then
             assertThrows(ValidationException.class, () -> {
@@ -454,7 +454,7 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long existingUserId = createdUser.getId();
             long nonExistingUserId = 666L;
             // When, Then
@@ -496,16 +496,16 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser1 = userController.create(user1);
-            User createdUser2 = userController.create(user2);
-            User createdUser3 = userController.create(user3);
+            User createdUser1 = userController.create(user1).getBody();
+            User createdUser2 = userController.create(user2).getBody();
+            User createdUser3 = userController.create(user3).getBody();
             long userId1 = createdUser1.getId();
             long userId2 = createdUser2.getId();
             long userId3 = createdUser3.getId();
             userController.addFriend(userId1, userId2);
             userController.addFriend(userId1, userId3);
             // When
-            List<User> friends = userController.getFriends(userId1);
+            List<User> friends = userController.getFriends(userId1).getBody();
             // Then
             assertNotNull(friends);
             assertEquals(2, friends.size());
@@ -525,10 +525,10 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             // When
-            List<User> friends = userController.getFriends(userId);
+            List<User> friends = userController.getFriends(userId).getBody();
             // Then
             assertNotNull(friends);
             assertTrue(friends.isEmpty());
@@ -578,16 +578,16 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser1 = userController.create(user1);
-            User createdUser2 = userController.create(user2);
-            User createdCommonFriend = userController.create(commonFriend);
+            User createdUser1 = userController.create(user1).getBody();
+            User createdUser2 = userController.create(user2).getBody();
+            User createdCommonFriend = userController.create(commonFriend).getBody();
             long userId1 = createdUser1.getId();
             long userId2 = createdUser2.getId();
             long commonFriendId = createdCommonFriend.getId();
             userController.addFriend(userId1, commonFriendId);
             userController.addFriend(userId2, commonFriendId);
             // When
-            List<User> commonFriends = userController.getCommonFriends(userId1, userId2);
+            List<User> commonFriends = userController.getCommonFriends(userId1, userId2).getBody();
             // Then
             assertNotNull(commonFriends);
             assertEquals(1, commonFriends.size());
@@ -631,10 +631,10 @@ class UserControllerTest {
                     .friends(new HashSet<>())
                     .build();
 
-            User createdUser1 = userController.create(user1);
-            User createdUser2 = userController.create(user2);
-            User createdFriend1 = userController.create(friend1);
-            User createdFriend2 = userController.create(friend2);
+            User createdUser1 = userController.create(user1).getBody();
+            User createdUser2 = userController.create(user2).getBody();
+            User createdFriend1 = userController.create(friend1).getBody();
+            User createdFriend2 = userController.create(friend2).getBody();
             long userId1 = createdUser1.getId();
             long userId2 = createdUser2.getId();
             long friend1Id = createdFriend1.getId();
@@ -642,7 +642,7 @@ class UserControllerTest {
             userController.addFriend(userId1, friend1Id);
             userController.addFriend(userId2, friend2Id);
             // When
-            List<User> commonFriends = userController.getCommonFriends(userId1, userId2);
+            List<User> commonFriends = userController.getCommonFriends(userId1, userId2).getBody();
             // Then
             assertNotNull(commonFriends);
             assertTrue(commonFriends.isEmpty());
@@ -660,7 +660,7 @@ class UserControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long existingUserId = createdUser.getId();
             long nonExistingUserId = 666L;
             // When, Then

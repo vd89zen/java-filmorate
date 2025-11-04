@@ -68,7 +68,7 @@ class FilmControllerTest {
                     .likes(new HashSet<>())
                     .build();
             //When
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             //Then
             assertNotNull(createdFilm.getId());
             assertEquals(film.getName(), createdFilm.getName());
@@ -259,11 +259,11 @@ class FilmControllerTest {
                     .likes(new HashSet<>())
                     .build();
 
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             String expectedName = "updatedName";
             //When
             createdFilm.setName(expectedName);
-            Film actualFilm = filmController.update(createdFilm);
+            Film actualFilm = filmController.update(createdFilm).getBody();
             //Then
             assertEquals(expectedName, actualFilm.getName());
         }
@@ -320,10 +320,10 @@ class FilmControllerTest {
                     .duration(60)
                     .likes(new HashSet<>())
                     .build();
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             long filmId = createdFilm.getId();
             //When
-            Film foundFilm = filmController.findById(filmId);
+            Film foundFilm = filmController.findById(filmId).getBody();
             //Then
             assertNotNull(foundFilm);
             assertEquals(filmId, foundFilm.getId());
@@ -368,7 +368,7 @@ class FilmControllerTest {
             filmController.create(film1);
             filmController.create(film2);
             //When
-            Collection<Film> films = filmController.findAll();
+            Collection<Film> films = filmController.findAll().getBody();
             //Then
             assertNotNull(films);
             assertEquals(2, films.size());
@@ -380,7 +380,7 @@ class FilmControllerTest {
         @DisplayName("Проверяем получение пустого списка при отсутствии фильмов")
         void findAll_Empty_Test() {
             //Given, When
-            Collection<Film> films = filmController.findAll();
+            Collection<Film> films = filmController.findAll().getBody();
             //Then
             assertNotNull(films);
             assertTrue(films.isEmpty());
@@ -402,7 +402,7 @@ class FilmControllerTest {
                     .duration(60)
                     .likes(new HashSet<>())
                     .build();
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             long filmId = createdFilm.getId();
 
             User user = User.builder()
@@ -413,12 +413,12 @@ class FilmControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             //When
             filmController.addLike(filmId, userId);
             //Then
-            Film updatedFilm = filmController.findById(filmId);
+            Film updatedFilm = filmController.findById(filmId).getBody();
             assertTrue(updatedFilm.getLikes().contains(userId));
             assertEquals(1, updatedFilm.getLikes().size());
         }
@@ -435,7 +435,7 @@ class FilmControllerTest {
                     .birthday(LocalDate.now().minusYears(26))
                     .friends(new HashSet<>())
                     .build();
-            User createdUser = userController.create(user);
+            User createdUser = userController.create(user).getBody();
             long userId = createdUser.getId();
             long nonExistingFilmId = 666L;
             //When, Then
@@ -460,13 +460,13 @@ class FilmControllerTest {
                     .duration(60)
                     .likes(Set.of(101L, 102L))
                     .build();
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             long filmId = createdFilm.getId();
             long userId = 101L;
             //When
             filmController.removeLike(filmId, userId);
             //Then
-            Film updatedFilm = filmController.findById(filmId);
+            Film updatedFilm = filmController.findById(filmId).getBody();
             assertFalse(updatedFilm.getLikes().contains(userId));
             assertEquals(1, updatedFilm.getLikes().size());
         }
@@ -495,7 +495,7 @@ class FilmControllerTest {
                     .duration(60)
                     .likes(Set.of(101L, 102L))
                     .build();
-            Film createdFilm = filmController.create(film);
+            Film createdFilm = filmController.create(film).getBody();
             long filmId = createdFilm.getId();
             long nonExistingUserId = 999L;
             //When, Then
@@ -538,7 +538,7 @@ class FilmControllerTest {
             filmController.create(film3);
             int count = 2;
             // When
-            List<Film> popularFilms = filmController.getMostPopularFilms(count);
+            List<Film> popularFilms = filmController.getMostPopularFilms(count).getBody();
             // Then
             assertEquals(count, popularFilms.size());
             // Проверяем, что фильмы отсортированы по количеству лайков (от большего к меньшему)
@@ -574,7 +574,7 @@ class FilmControllerTest {
             int count = 10;
 
             // When
-            List<Film> popularFilms = filmController.getMostPopularFilms(count);
+            List<Film> popularFilms = filmController.getMostPopularFilms(count).getBody();
 
             // Then
             assertTrue(popularFilms.isEmpty());
@@ -610,7 +610,7 @@ class FilmControllerTest {
             filmController.create(film2);
             filmController.create(film3);
             // When
-            List<Film> popularFilms = filmController.getMostPopularFilms(count);
+            List<Film> popularFilms = filmController.getMostPopularFilms(count).getBody();
             // Then
             assertEquals(3, popularFilms.size());
             Set<String> filmNames = popularFilms.stream()

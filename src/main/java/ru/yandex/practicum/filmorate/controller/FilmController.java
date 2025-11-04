@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -23,47 +24,48 @@ public class FilmController {
     }
 
     @PostMapping
-    @ResponseStatus(HttpStatus.CREATED)
     @CacheEvict(value = "films", allEntries = true)
-    public Film create(@Valid @RequestBody Film newFilm) {
-        return filmService.create(newFilm);
+    public ResponseEntity<Film> create(@Valid @RequestBody Film newFilm) {
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(filmService.create(newFilm));
     }
 
     @PutMapping
-    @ResponseStatus(HttpStatus.OK)
     @CacheEvict(value = "films", key = "#film.id")
-    public Film update(@Valid @RequestBody Film film) {
-        return filmService.update(film);
+    public ResponseEntity<Film> update(@Valid @RequestBody Film film) {
+        return ResponseEntity
+                .ok(filmService.update(film));
     }
 
     @GetMapping("/{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public Film findById(@PathVariable long id) {
-        return filmService.findById(id);
+    public ResponseEntity<Film> findById(@PathVariable long id) {
+        return ResponseEntity
+                .ok(filmService.findById(id));
     }
 
     @GetMapping
-    @ResponseStatus(HttpStatus.OK)
     @Cacheable("films")
-    public Collection<Film> findAll() {
-        return filmService.findAll();
+    public ResponseEntity<Collection<Film>> findAll() {
+        return ResponseEntity
+                .ok(filmService.findAll());
     }
 
     @PutMapping("/{id}/like/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void addLike(@PathVariable long id, @PathVariable long userId) {
+    public ResponseEntity<Void> addLike(@PathVariable long id, @PathVariable long userId) {
         filmService.likeFilm(id, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}/like/{userId}")
-    @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void removeLike(@PathVariable long id, @PathVariable long userId) {
+    public ResponseEntity<Void> removeLike(@PathVariable long id, @PathVariable long userId) {
         filmService.unlikeFilm(id, userId);
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/popular")
-    @ResponseStatus(HttpStatus.OK)
-    public List<Film> getMostPopularFilms(@RequestParam(defaultValue = "10") int count) {
-        return filmService.getMostPopularFilms(count);
+    public ResponseEntity<List<Film>> getMostPopularFilms(@RequestParam(defaultValue = "10") int count) {
+        return ResponseEntity
+                .ok(filmService.getMostPopularFilms(count));
     }
 }
