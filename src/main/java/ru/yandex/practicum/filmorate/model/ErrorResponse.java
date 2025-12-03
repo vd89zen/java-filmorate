@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.error;
+package ru.yandex.practicum.filmorate.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

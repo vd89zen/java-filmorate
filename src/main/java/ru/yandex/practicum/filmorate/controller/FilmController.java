@@ -1,18 +1,18 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.model.Film;
+import ru.yandex.practicum.filmorate.dto.FilmDto;
+import ru.yandex.practicum.filmorate.dto.NewFilmRequest;
+import ru.yandex.practicum.filmorate.dto.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import java.util.*;
 
-@Slf4j
 @Validated
 @RestController
 @RequestMapping("/films")
@@ -24,48 +24,48 @@ public class FilmController {
     }
 
     @PostMapping
-    @CacheEvict(value = "films", allEntries = true)
-    public ResponseEntity<Film> create(@Valid @RequestBody Film newFilm) {
+    public ResponseEntity<FilmDto> create(@Valid @RequestBody NewFilmRequest newFilmRequest) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(filmService.create(newFilm));
+                .body(filmService.create(newFilmRequest));
     }
 
     @PutMapping
-    @CacheEvict(value = "films", key = "#film.id")
-    public ResponseEntity<Film> update(@Valid @RequestBody Film film) {
+    public ResponseEntity<FilmDto> update(@Valid @RequestBody UpdateFilmRequest updateFilmRequest) {
         return ResponseEntity
-                .ok(filmService.update(film));
+                .ok(filmService.update(updateFilmRequest));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<Film> findById(@PathVariable long id) {
+    @GetMapping("/{filmId}")
+    public ResponseEntity<FilmDto> findById(@PathVariable @NotNull @Positive Long filmId) {
         return ResponseEntity
-                .ok(filmService.findById(id));
+                .ok(filmService.findById(filmId));
     }
 
     @GetMapping
-    @Cacheable("films")
-    public ResponseEntity<Collection<Film>> findAll() {
+    public ResponseEntity<Collection<FilmDto>> findAll() {
         return ResponseEntity
                 .ok(filmService.findAll());
     }
 
-    @PutMapping("/{id}/like/{userId}")
-    public ResponseEntity<Void> addLike(@PathVariable long id, @PathVariable long userId) {
-        filmService.likeFilm(id, userId);
+    @PutMapping("/{filmId}/like/{userId}")
+    public ResponseEntity<Void> addLike(@PathVariable @NotNull @Positive Long filmId,
+                                        @PathVariable @NotNull @Positive Long userId) {
+        filmService.likeFilm(filmId, userId);
         return ResponseEntity.noContent().build();
     }
 
-    @DeleteMapping("/{id}/like/{userId}")
-    public ResponseEntity<Void> removeLike(@PathVariable long id, @PathVariable long userId) {
-        filmService.unlikeFilm(id, userId);
+    @DeleteMapping("/{filmId}/like/{userId}")
+    public ResponseEntity<Void> removeLike(@PathVariable @NotNull @Positive Long filmId,
+                                           @PathVariable @NotNull @Positive Long userId) {
+        filmService.unlikeFilm(filmId, userId);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/popular")
-    public ResponseEntity<List<Film>> getMostPopularFilms(@RequestParam(defaultValue = "10") int count) {
+    public ResponseEntity<List<FilmDto>> getMostPopularFilms(@RequestParam(defaultValue = "10")
+                                                             @NotNull @Positive Integer count) {
         return ResponseEntity
-                .ok(filmService.getMostPopularFilms(count));
+                .ok(filmService.getTopPopularFilms(count));
     }
 }

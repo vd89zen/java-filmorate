@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.exception;
 
-import ru.yandex.practicum.filmorate.error.ValidationError;
+import ru.yandex.practicum.filmorate.model.ValidationError;
 
 public class ValidationException extends RuntimeException {
     private final ValidationError validationError;
