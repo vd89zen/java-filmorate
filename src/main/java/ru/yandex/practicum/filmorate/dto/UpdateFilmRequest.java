@@ -2,7 +2,6 @@ package ru.yandex.practicum.filmorate.dto;
 
 import jakarta.validation.constraints.*;
 import lombok.*;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.time.LocalDate;
 import java.util.Set;
 
@@ -23,9 +22,9 @@ public class UpdateFilmRequest {
     LocalDate releaseDate;
     @Positive(message = "Если поле не null: длительность фильма должна быть положительным числом.")
     Integer duration;
-    RatingMpaa mpa;
+    RatingMpaaId mpa;
     @Size(min = 1, message = "Если поле не null: должен быть указан хотя бы один жанр.")
-    Set<GenreDto> genres;
+    Set<GenreId> genres;
 
     public boolean hasName() {
         return name != null;

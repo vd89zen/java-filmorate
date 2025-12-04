@@ -6,11 +6,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,7 +54,7 @@ class FilmGenresDbStorageTest {
                 .description("Description")
                 .releaseDate(LocalDate.now())
                 .duration(90)
-                .ratingMpaa(new RatingMpaa(1L, "G"))
+                .mpa(new RatingMpaaId(1L))
                 .build();
         return filmStorage.create(film).getId();
     }
@@ -93,7 +94,7 @@ class FilmGenresDbStorageTest {
             // given
             filmGenresStorage.insert(filmId, genreIds);
             // when
-            Set<Genre> genres = filmGenresStorage.getGenresOfFilm(filmId);
+            List<Genre> genres = filmGenresStorage.getGenresOfFilm(filmId);
             // then
             assertThat(genres).hasSize(3);
             assertThat(genres)
@@ -108,7 +109,7 @@ class FilmGenresDbStorageTest {
             // given
             Long nonExistingFilmId = 666L;
             // when
-            Set<Genre> genres = filmGenresStorage.getGenresOfFilm(nonExistingFilmId);
+            List<Genre> genres = filmGenresStorage.getGenresOfFilm(nonExistingFilmId);
             // then
             assertThat(genres).isEmpty();
         }
@@ -152,7 +153,7 @@ class FilmGenresDbStorageTest {
             filmGenresStorage.insert(filmIdTo, genreIdsTo);
             Set<Long> filmsIds = Set.of(filmId, filmIdTo);
             // when
-            Map<Long, Set<Genre>> result = filmGenresStorage.getGenresByFilmsIds(filmsIds);
+            Map<Long, List<Genre>> result = filmGenresStorage.getGenresByFilmsIds(filmsIds);
             // then
             assertThat(result).hasSize(2);
 
@@ -171,7 +172,7 @@ class FilmGenresDbStorageTest {
             // given
             Set<Long> emptyFilmIds = Collections.emptySet();
             // when
-            Map<Long, Set<Genre>> result = filmGenresStorage.getGenresByFilmsIds(emptyFilmIds);
+            Map<Long, List<Genre>> result = filmGenresStorage.getGenresByFilmsIds(emptyFilmIds);
             // then
             assertThat(result).isEmpty();
         }
@@ -183,7 +184,7 @@ class FilmGenresDbStorageTest {
             // given
             Set<Long> nonExistingIds = Set.of(222L, 555L);
             // when
-            Map<Long, Set<Genre>> result = filmGenresStorage.getGenresByFilmsIds(nonExistingIds);
+            Map<Long, List<Genre>> result = filmGenresStorage.getGenresByFilmsIds(nonExistingIds);
             // then
             assertThat(result).isEmpty();
         }

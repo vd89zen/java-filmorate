@@ -15,23 +15,19 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
     private static final String DELETE_FILM_QUERY = "DELETE FROM films WHERE id = ?";
     private static final String IS_FILM_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM films WHERE id = ? LIMIT 1)";
     private static final String FIND_ALL_FILMS_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, rm.name AS mpa_name
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
         FROM films f
-        LEFT JOIN rating_mpaa rm ON rm.id = f.rating_mpaa_id
         ORDER BY f.id
         """;
     private static final String FIND_FILM_BY_ID_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, rm.name AS mpa_name
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
         FROM films f
-        LEFT JOIN rating_mpaa rm ON rm.id = f.rating_mpaa_id
         WHERE f.id = ?
         """;
     private static final String FIND_FILMS_BY_IDS_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, rm.name AS mpa_name
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
         FROM films f
-        LEFT JOIN rating_mpaa rm ON rm.id = f.rating_mpaa_id
         WHERE f.id IN (:filmsIds)
-        ORDER BY f.id
         """;
     private static final String INSERT_FILM_QUERY = """
         INSERT INTO films(name, description, release_date, duration, rating_mpaa_id)
@@ -57,7 +53,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                 newFilm.getDescription(),
                 newFilm.getReleaseDate(),
                 newFilm.getDuration(),
-                newFilm.getRatingMpaa().getId());
+                newFilm.getMpa().getId());
 
         newFilm.setId(returnedId);
         return newFilm;
@@ -70,7 +66,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                 updatingFilm.getDescription(),
                 updatingFilm.getReleaseDate(),
                 updatingFilm.getDuration(),
-                updatingFilm.getRatingMpaa().getId(),
+                updatingFilm.getMpa().getId(),
                 updatingFilm.getId());
     }
 

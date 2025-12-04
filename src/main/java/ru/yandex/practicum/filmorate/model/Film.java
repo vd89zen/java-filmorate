@@ -1,10 +1,8 @@
 package ru.yandex.practicum.filmorate.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.*;
+import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 @Builder
 @Data
@@ -17,10 +15,5 @@ public class Film {
     String description;
     LocalDate releaseDate;
     int duration;
-    RatingMpaa ratingMpaa;
-    @Builder.Default
-    Set<Genre> genres = new LinkedHashSet<>();
-    @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @Builder.Default
-    Integer likesCount = 0;
+    RatingMpaaId mpa;
 }

@@ -6,8 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import ru.yandex.practicum.filmorate.model.User;
 import java.time.LocalDate;
 import java.util.*;
@@ -58,7 +58,7 @@ class FilmLikesDbStorageTest {
                 .description("Description")
                 .releaseDate(LocalDate.now())
                 .duration(90)
-                .ratingMpaa(new RatingMpaa(1L, "G"))
+                .mpa(new RatingMpaaId(1L))
                 .build();
         return filmStorage.create(film).getId();
     }

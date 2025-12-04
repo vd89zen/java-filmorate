@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Genre;
 import java.sql.PreparedStatement;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -49,7 +50,7 @@ public class FilmGenresDbStorage {
         );
     }
 
-    public Set<Genre> getGenresOfFilm(Long filmId) {
+    public List<Genre> getGenresOfFilm(Long filmId) {
         return jdbc.query(
                         GET_GENRES_OF_ONE_FILM_QUERY,
                         (PreparedStatement ps) -> ps.setLong(1, filmId),
@@ -58,9 +59,7 @@ public class FilmGenresDbStorage {
                             genre.setId(rs.getLong("genre_id"));
                             genre.setName(rs.getString("genre_name"));
                             return genre;
-                        }
-                ).stream()
-                .collect(Collectors.toSet());
+                        });
     }
 
     public Set<Long> getGenreIdsOfFilm(Long filmId) {
@@ -72,7 +71,7 @@ public class FilmGenresDbStorage {
                 .collect(Collectors.toSet());
     }
 
-    public Map<Long, Set<Genre>> getGenresByFilmsIds(Set<Long> filmsIds) {
+    public Map<Long, List<Genre>> getGenresByFilmsIds(Set<Long> filmsIds) {
         MapSqlParameterSource params = new MapSqlParameterSource("filmsIds", filmsIds);
         return namedJdbc.query(GET_GENRES_OF_FILMS_QUERY, params, (rs, rowNum) -> {
                     Long filmId = rs.getLong("film_id");
@@ -84,7 +83,7 @@ public class FilmGenresDbStorage {
                 .stream()
                 .collect(Collectors.groupingBy(
                         Map.Entry::getKey,
-                        Collectors.mapping(Map.Entry::getValue, Collectors.toSet())
+                        Collectors.mapping(Map.Entry::getValue, Collectors.toList())
                 ));
     }
 

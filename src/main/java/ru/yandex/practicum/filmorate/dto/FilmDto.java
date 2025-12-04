@@ -3,11 +3,10 @@ package ru.yandex.practicum.filmorate.dto;
 import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import ru.yandex.practicum.filmorate.model.Genre;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
+import java.util.Comparator;
 import java.util.Set;
+import java.util.TreeSet;
 
 @Builder
 @Data
@@ -18,8 +17,8 @@ public class FilmDto {
     String description;
     LocalDate releaseDate;
     Integer duration;
-    RatingMpaa mpa;
+    RatingMpaaDto mpa;
     @Builder.Default
-    Set<Genre> genres = new LinkedHashSet<>();
+    Set<GenreDto> genres = new TreeSet<>(Comparator.comparing(GenreDto::getId));
     Integer likesCount;
 }

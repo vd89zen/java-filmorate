@@ -4,9 +4,8 @@ import jakarta.validation.constraints.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.time.LocalDate;
-import java.util.LinkedHashSet;
+import java.util.HashSet;
 import java.util.Set;
 
 @Data
@@ -24,6 +23,6 @@ public class NewFilmRequest {
     @Positive(message = "Длительность фильма должна быть положительным числом.")
     Integer duration;
     @NotNull(message = "Рейтинг фильма не может быть null.")
-    RatingMpaa mpa;
-    Set<GenreDto> genres = new LinkedHashSet<>();
+    RatingMpaaId mpa;
+    Set<GenreId> genres = new HashSet<>();
 }

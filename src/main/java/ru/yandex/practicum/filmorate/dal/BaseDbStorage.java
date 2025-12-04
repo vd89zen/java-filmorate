@@ -14,6 +14,7 @@ import java.util.Optional;
 public class BaseDbStorage<T> {
     protected final JdbcTemplate jdbc;
     protected final RowMapper<T> mapper;
+    private static final String CANT_UPDATE = "Не удалось обновить данные в БД.";
 
     protected Optional<T> findOne(String query, Object... params) {
         try {
@@ -37,10 +38,10 @@ public class BaseDbStorage<T> {
         try {
             int rowsUpdated = jdbc.update(query, params);
             if (rowsUpdated == 0) {
-                throw new RuntimeException("Не удалось обновить данные в БД.");
+                throw new RuntimeException(CANT_UPDATE);
             }
         } catch (EmptyResultDataAccessException e) {
-            throw new RuntimeException("Не удалось обновить данные в БД.");
+            throw new RuntimeException(CANT_UPDATE);
         }
     }
 
@@ -60,7 +61,7 @@ public class BaseDbStorage<T> {
         if (id != null) {
             return id;
         } else {
-            throw new RuntimeException("Не удалось сохранить данные в БД");
+            throw new RuntimeException(CANT_UPDATE);
         }
     }
 }

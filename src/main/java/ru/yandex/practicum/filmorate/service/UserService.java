@@ -117,15 +117,6 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public int getUserFriendsCount(Long userId) {
-        checkUserExists(userId);
-        return friendshipDbStorage.getUserFriendsCount(userId);
-    }
-
-    public Map<Long, Integer> getFriendsCountByUsersIds(Set<Long> usersIds) {
-        return friendshipDbStorage.getFriendsCountByUsersIds(usersIds);
-    }
-
     public List<UserDto> getCommonFriends(Long userId, Long otherUserId) {
         checkUserExists(userId);
         checkUserExists(otherUserId);

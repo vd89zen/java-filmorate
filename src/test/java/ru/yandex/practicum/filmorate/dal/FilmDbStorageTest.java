@@ -9,8 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -43,7 +43,7 @@ class FilmDbStorageTest {
                     .description("A mind-bending thriller.")
                     .releaseDate(LocalDate.of(2010, 7, 16))
                     .duration(148)
-                    .ratingMpaa(new RatingMpaa(3L, "PG-13"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             // when
             Film createdFilm = filmStorage.create(newFilm);
@@ -55,6 +55,7 @@ class FilmDbStorageTest {
                     .hasFieldOrPropertyWithValue("description", "A mind-bending thriller.")
                     .hasFieldOrPropertyWithValue("releaseDate", LocalDate.of(2010, 7, 16))
                     .hasFieldOrPropertyWithValue("duration", 148);
+
             assertThat(filmStorage.isFilmExists(createdFilm.getId())).isTrue();
         }
     }
@@ -71,7 +72,7 @@ class FilmDbStorageTest {
                     .description("Sci-fi classic.")
                     .releaseDate(LocalDate.of(1999, 3, 31))
                     .duration(136)
-                    .ratingMpaa(new RatingMpaa(2L, "R"))
+                    .mpa(new RatingMpaaId(2L))
                     .build();
             Film savedFilm = filmStorage.create(originalFilm);
             Film updatedFilm = Film.builder()
@@ -80,7 +81,7 @@ class FilmDbStorageTest {
                     .description(savedFilm.getDescription())
                     .releaseDate(savedFilm.getReleaseDate())
                     .duration(savedFilm.getDuration())
-                    .ratingMpaa(savedFilm.getRatingMpaa())
+                    .mpa(savedFilm.getMpa())
                     .build();
 
             updatedFilm.setName("The Matrix: Reloaded");
@@ -113,7 +114,7 @@ class FilmDbStorageTest {
                     .description("Space adventure.")
                     .releaseDate(LocalDate.of(2014, 11, 7))
                     .duration(169)
-                    .ratingMpaa(new RatingMpaa(3L, "PG-13"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             Film savedFilm = filmStorage.create(film);
             Long filmId = savedFilm.getId();
@@ -156,14 +157,14 @@ class FilmDbStorageTest {
                     .description("Epic sci-fi.")
                     .releaseDate(LocalDate.of(2021, 9, 3))
                     .duration(155)
-                    .ratingMpaa(new RatingMpaa(3L,"PG-13"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             Film film2 = Film.builder()
                     .name("Eternal Sunshine")
                     .description("Romantic drama.")
                     .releaseDate(LocalDate.of(2004, 3, 19))
                     .duration(108)
-                    .ratingMpaa(new RatingMpaa(2L, "R"))
+                    .mpa(new RatingMpaaId(2L))
                     .build();
             filmStorage.create(film1);
             filmStorage.create(film2);
@@ -191,7 +192,7 @@ class FilmDbStorageTest {
                     .description("Neo-noir sci-fi.")
                     .releaseDate(LocalDate.of(2017, 10, 6))
                     .duration(164)
-                    .ratingMpaa(new RatingMpaa(3L, "R"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             Film savedFilm = filmStorage.create(film);
             Long filmId = savedFilm.getId();
@@ -216,7 +217,7 @@ class FilmDbStorageTest {
                     .description("Epic sci-fi.")
                     .releaseDate(LocalDate.of(2021, 9, 3))
                     .duration(155)
-                    .ratingMpaa(new RatingMpaa(3L, "PG-13"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             Film savedFilm1 = filmStorage.create(film1);
 
@@ -225,7 +226,7 @@ class FilmDbStorageTest {
                     .description("Romantic drama.")
                     .releaseDate(LocalDate.of(2004, 3, 19))
                     .duration(108)
-                    .ratingMpaa(new RatingMpaa(2L, "R"))
+                    .mpa(new RatingMpaaId(2L))
                     .build();
             Film savedFilm2 = filmStorage.create(film2);
 
@@ -274,7 +275,7 @@ class FilmDbStorageTest {
                     .description("Space adventure.")
                     .releaseDate(LocalDate.of(2014, 11, 7))
                     .duration(169)
-                    .ratingMpaa(new RatingMpaa(3L, "PG-13"))
+                    .mpa(new RatingMpaaId(3L))
                     .build();
             Film savedFilm = filmStorage.create(film);
             Long filmId = savedFilm.getId();
