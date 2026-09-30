@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.dal;
 
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -25,11 +24,6 @@ public class RatingMpaaDbStorage extends BaseDbStorage<RatingMpaa> {
 
     public Optional<RatingMpaa> findById(Long id) {
         return findOne(FIND_RATING_BY_ID_QUERY, id);
-    }
-
-    @CacheEvict(value = "ratings", allEntries = true)
-    public void evictCache() {
-        // Кэш очищен
     }
 }
 

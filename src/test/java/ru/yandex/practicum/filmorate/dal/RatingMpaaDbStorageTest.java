@@ -10,7 +10,6 @@ import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.util.List;
 import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatCode;
 
 @SpringBootTest
 @AutoConfigureTestDatabase
@@ -70,18 +69,6 @@ class RatingMpaaDbStorageTest {
             // then
             System.out.println(found);
             assertThat(found).isEmpty();
-        }
-    }
-
-    @Nested
-    @DisplayName("Тесты evictCache()")
-    class EvictCacheTests {
-        @Test
-        @DisplayName("Проверяем отсутствие исключений при очистке кэша")
-        void evictCache_Should_Execute_Without_Exceptions_Test() {
-            // given, when, then
-            assertThatCode(() -> storage.evictCache())
-                    .doesNotThrowAnyException();
         }
     }
 }

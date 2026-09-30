@@ -1,6 +1,5 @@
 package ru.yandex.practicum.filmorate.dal;
 
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
@@ -38,11 +37,6 @@ public class GenreDbStorage extends BaseDbStorage<Genre> {
     public List<Genre> findByIds(Set<Long> genresIds) {
         MapSqlParameterSource params = new MapSqlParameterSource("genresIds", genresIds);
         return namedJdbc.query(FIND_GENRES_BY_IDS_QUERY, params, mapper);
-    }
-
-    @CacheEvict(value = "genres", allEntries = true)
-    public void evictCache() {
-        // Кэш очищен
     }
 }
 

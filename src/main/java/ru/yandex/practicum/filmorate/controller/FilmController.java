@@ -68,4 +68,11 @@ public class FilmController {
         return ResponseEntity
                 .ok(filmService.getTopPopularFilms(count));
     }
+
+    @GetMapping("/common")
+    public ResponseEntity<List<FilmDto>> getCommonFilms(@RequestParam @NotNull @Positive Long userId,
+                                                        @RequestParam @NotNull @Positive Long friendId) {
+        return ResponseEntity
+                .ok(filmService.getCommonFilms(userId, friendId));
+    }
 }
