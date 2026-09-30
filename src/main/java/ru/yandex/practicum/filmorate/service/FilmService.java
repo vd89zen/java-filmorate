@@ -32,16 +32,6 @@ public class FilmService {
     private final GenreService genreService;
     private final RatingMpaaService ratingMpaaService;
 
-    private void checkDate(LocalDate date) {
-        if (date.isBefore(MOVIE_BIRTHDAY)) {
-            throw new ValidationException(ValidationError.builder()
-                    .field("releaseDate")
-                    .message("Дата релиза должна быть не раньше 28 декабря 1895 года.")
-                    .rejectedValue(date)
-                    .build());
-        }
-    }
-
     @Transactional
     public FilmDto create(NewFilmRequest newFilmRequest) {
         log.info("Создание нового фильма: {}", newFilmRequest);
@@ -54,15 +44,6 @@ public class FilmService {
         Long filmId = newFilm.getId();
 
         FilmDto filmDto = FilmMapper.mapToDto(newFilm);
-
-//        Set<GenreId> genres = newFilmRequest.getGenres();
-//        if (genres != null && genres.isEmpty() == false) {
-//            Set<Long> genresIds = GenreMapper.mapGenreIdToIds(genres);
-//            genreService.validateGenresByIds(genresIds);
-//            log.info("Связывание нового фильма {} с жанрами {}", filmId, genresIds);
-//            filmGenresDbStorage.insert(filmId, genresIds);
-//            genres.forEach(filmDto.getGenres()::add);
-//        }
 
         Set<GenreId> genres = newFilmRequest.getGenres();
         if (genres != null && genres.isEmpty() == false) {
@@ -182,11 +163,6 @@ public class FilmService {
         }
     }
 
-    private Film getFilmOrThrow(Long id) {
-        return filmStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException(String.format(FILM_NOT_FOUND, id)));
-    }
-
     @Transactional
     public void likeFilm(Long filmId, Long userId) {
         log.info("Добавление лайка: фильм ID {}, пользователь ID {}.", filmId, userId);
@@ -223,12 +199,15 @@ public class FilmService {
         List<Film> films = filmStorage.findBySeveralIds(filmsIds);
         Map<Long, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, film -> film));
         Map<Long, List<Genre>> genres = filmGenresDbStorage.getGenresByFilmsIds(Set.copyOf(filmsIds));
+        Map<Long, RatingMpaaDto> mpaDto = ratingMpaaService.findAll().stream()
+                .collect(Collectors.toMap(RatingMpaaDto::getId, ratingMpaaDto -> ratingMpaaDto));
 
         List<FilmDto> topFilms = filmsIds.stream()
                 .map(filmMap::get)
                 .filter(Objects::nonNull)
                 .map(FilmMapper::mapToDto)
                 .map(filmDto -> {
+                    filmDto.setMpa(mpaDto.get(filmDto.getMpa().getId()));
                     GenreMapper.toDtoSet(
                                     genres.getOrDefault(filmDto.getId(), List.of()))
                             .forEach(filmDto.getGenres()::add);
@@ -238,6 +217,58 @@ public class FilmService {
                 }).toList();
 
         return topFilms;
+    }
+
+    @Transactional
+    public List<FilmDto> getCommonFilms(Long userId, Long otherUserId) {
+        log.info("Получение общих фильмов пользователей ID {} и ID {}.", userId, otherUserId);
+
+        userService.checkUserExists(userId);
+        userService.checkUserExists(otherUserId);
+
+        Set<Long> userLikes = filmLikesDbStorage.getFilmsIdsLikedByUser(userId);
+        Set<Long> otherUserLikes = filmLikesDbStorage.getFilmsIdsLikedByUser(otherUserId);
+
+        Set<Long> commonFilmsIds = new HashSet<>(userLikes);
+        commonFilmsIds.retainAll(otherUserLikes);
+
+        if (commonFilmsIds.isEmpty()) {
+            log.info("У пользователей ID {} и ID {} нет общих фильмов.", userId, otherUserId);
+            return List.of();
+        }
+
+        List<Film> films = filmStorage.findBySeveralIds(new ArrayList<>(commonFilmsIds));
+        Map<Long, List<Genre>> genres = filmGenresDbStorage.getGenresByFilmsIds(commonFilmsIds);
+        Map<Long, Integer> likesCount = filmLikesDbStorage.getLikesCountByFilmsIds(commonFilmsIds);
+        Map<Long, RatingMpaaDto> mpaDto = ratingMpaaService.findAll().stream()
+                .collect(Collectors.toMap(RatingMpaaDto::getId, ratingMpaaDto -> ratingMpaaDto));
+
+        return films.stream()
+                .map(FilmMapper::mapToDto)
+                .map(filmDto -> {
+                    filmDto.setMpa(mpaDto.get(filmDto.getMpa().getId()));
+                    GenreMapper.toDtoSet(genres.getOrDefault(filmDto.getId(), List.of()))
+                            .forEach(filmDto.getGenres()::add);
+                    filmDto.setLikesCount(likesCount.getOrDefault(filmDto.getId(), 0));
+                    return filmDto;
+                })
+                .sorted(Comparator.comparing(FilmDto::getLikesCount).reversed())
+                .collect(Collectors.toList());
+    }
+
+    private void checkDate(LocalDate date) {
+        if (date.isBefore(MOVIE_BIRTHDAY)) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("releaseDate")
+                    .message("Дата релиза должна быть не раньше 28 декабря 1895 года.")
+                    .rejectedValue(date)
+                    .build());
+        }
+    }
+
+    private Film getFilmOrThrow(Long id) {
+        return filmStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException(String.format(FILM_NOT_FOUND, id)));
     }
 
     private int getLikesCountOfFilm(Long filmId) {

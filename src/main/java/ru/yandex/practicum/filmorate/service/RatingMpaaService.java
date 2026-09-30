@@ -30,9 +30,5 @@ public class RatingMpaaService {
         return RatingMpaaMapper.toDto(ratingMpaaDbStorage.findById(ratingId)
                 .orElseThrow(() -> new NotFoundException(String.format("Рейтинг с id = %d не найден.", ratingId))));
     }
-
-    public void refreshCache() {
-        ratingMpaaDbStorage.evictCache();
-    }
 }
 

@@ -56,8 +56,4 @@ public class GenreService {
 
         return GenreMapper.toDtoSet(foundGenres);
     }
-
-    public void refreshCache() {
-        genreDbStorage.evictCache();
-    }
 }
