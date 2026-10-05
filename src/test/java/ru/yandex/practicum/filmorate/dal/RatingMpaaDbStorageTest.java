@@ -5,7 +5,6 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.RatingMpaa;
 import java.util.List;
 import java.util.Optional;
@@ -19,8 +18,6 @@ class RatingMpaaDbStorageTest {
 
     @Autowired
     private RatingMpaaDbStorage storage;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
 
     @Nested
     @DisplayName("Тесты findAll()")

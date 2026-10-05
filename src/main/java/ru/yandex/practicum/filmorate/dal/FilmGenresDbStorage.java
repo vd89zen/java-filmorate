@@ -1,6 +1,6 @@
 package ru.yandex.practicum.filmorate.dal;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -30,10 +30,10 @@ public class FilmGenresDbStorage {
             WHERE fg.film_id IN (:filmsIds)
             """;
 
-    private final JdbcTemplate jdbc;
+    private final JdbcOperations jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    public FilmGenresDbStorage(JdbcTemplate jdbc) {
+    public FilmGenresDbStorage(JdbcOperations jdbc) {
         this.jdbc = jdbc;
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }

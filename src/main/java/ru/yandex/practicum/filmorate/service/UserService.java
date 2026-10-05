@@ -11,6 +11,10 @@ import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.model.interfaces.UserStorage;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -20,6 +24,7 @@ import java.util.stream.Collectors;
 public class UserService {
     private final UserStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
+    private final EventService eventService;
 
     public void checkUserExists(Long userId) {
         if (userStorage.isUserExists(userId) == false) {
@@ -93,13 +98,27 @@ public class UserService {
 
         checkUserExists(userId);
         checkUserExists(friendId);
-        friendshipDbStorage.addFriend(userId, friendId);
+        if (friendshipDbStorage.isFriend(userId, friendId)) {
+            log.info("UserService: Друг уже был добавлен ранее.");
+        } else {
+            friendshipDbStorage.addFriend(userId, friendId);
+            log.info("UserService: Друг успешно добавлен.");
+            eventService.addEvent(userId, EventTypes.FRIEND, OperationTypes.ADD, friendId);
+            log.info("UserService: Добавлено событие (add friend) в ленту пользователя.");
+        }
     }
 
     public void removeFriend(Long userId, Long friendId) {
         checkUserExists(userId);
         checkUserExists(friendId);
-        friendshipDbStorage.removeFriend(userId, friendId);
+        if (friendshipDbStorage.isFriend(userId, friendId)) {
+            friendshipDbStorage.removeFriend(userId, friendId);
+            log.info("UserService: Пользователь ID {} успешно удален из друзей пользователя ID {}.", friendId, userId);
+            eventService.addEvent(userId, EventTypes.FRIEND, OperationTypes.REMOVE, friendId);
+            log.info("UserService: Добавлено событие (remove friend) в ленту пользователя.");
+        } else {
+            log.info("UserService: Пользователь ID {} не является другом пользователя ID {}.", friendId, userId);
+        }
     }
 
     public List<UserDto> getUserFriends(Long userId) {
@@ -114,6 +133,7 @@ public class UserService {
     }
 
     public List<UserDto> getCommonFriends(Long userId, Long otherUserId) {
+        log.info("Получение списка общих друзей пользователей ID {} и {}.", userId, otherUserId);
         checkUserExists(userId);
         checkUserExists(otherUserId);
         List<User> commonFriends = userStorage.findBySeveralIds(
@@ -123,6 +143,12 @@ public class UserService {
         return commonFriends.stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
+    }
+
+    public List<Event> getFeed(Long userId) {
+        log.info("Получение ленты событий пользователя ID {}.", userId);
+        checkUserExists(userId);
+        return eventService.getFeed(userId);
     }
 
     private User getUserOrThrow(Long id) {

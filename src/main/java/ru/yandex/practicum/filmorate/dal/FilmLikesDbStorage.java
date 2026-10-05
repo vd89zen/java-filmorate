@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.dal;
 
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -51,10 +51,10 @@ public class FilmLikesDbStorage {
             LIMIT :limit
             """;
 
-    private final JdbcTemplate jdbc;
+    private final JdbcOperations jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    public FilmLikesDbStorage(JdbcTemplate jdbc) {
+    public FilmLikesDbStorage(JdbcOperations jdbc) {
         this.jdbc = jdbc;
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }

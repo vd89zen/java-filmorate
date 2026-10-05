@@ -1,17 +1,17 @@
 package ru.yandex.practicum.filmorate.dal;
 
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.model.UserStorage;
+import ru.yandex.practicum.filmorate.model.interfaces.UserStorage;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class UserDbStorage extends BaseDbStorage implements UserStorage {
+public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
     private static final String DELETE_USER_QUERY = "DELETE FROM users WHERE id = ?";
     private static final String FIND_BY_EMAIL_QUERY = "SELECT * FROM users WHERE email = ?";
     private static final String IS_USER_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
@@ -44,7 +44,7 @@ public class UserDbStorage extends BaseDbStorage implements UserStorage {
 
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    public UserDbStorage(JdbcTemplate jdbc, RowMapper<User> mapper) {
+    public UserDbStorage(JdbcOperations jdbc, RowMapper<User> mapper) {
         super(jdbc, mapper);
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }

@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.dal;
 
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -20,7 +20,7 @@ public class GenreDbStorage extends BaseDbStorage<Genre> {
 
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    public GenreDbStorage(JdbcTemplate jdbc, RowMapper<Genre> mapper) {
+    public GenreDbStorage(JdbcOperations jdbc, RowMapper<Genre> mapper) {
         super(jdbc, mapper);
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }

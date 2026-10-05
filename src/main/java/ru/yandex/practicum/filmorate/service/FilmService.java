@@ -14,7 +14,9 @@ import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.FilmStorage;
+import ru.yandex.practicum.filmorate.model.enums.EventTypes;
+import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.model.interfaces.FilmStorage;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -31,6 +33,7 @@ public class FilmService {
     private final UserService userService;
     private final GenreService genreService;
     private final RatingMpaaService ratingMpaaService;
+    private final EventService eventService;
 
     public void checkFilmExists(Long filmId) {
         if (filmStorage.isFilmExists(filmId) == false) {
@@ -177,6 +180,9 @@ public class FilmService {
                     .message("У фильма уже есть лайк от пользователя.")
                     .rejectedValue(String.format("Фильм ID %d, пользователь ID %d.", filmId, userId))
                     .build());
+        } else {
+            eventService.addEvent(userId, EventTypes.LIKE, OperationTypes.ADD, filmId);
+            log.info("FilmService: Добавлено событие (add like) в ленту пользователя");
         }
     }
 
@@ -189,6 +195,9 @@ public class FilmService {
 
         if (filmLikesDbStorage.deleteLikeFromFilmIfExists(filmId, userId) == false) {
             throw new NotFoundException(String.format("У фильма ID %d нет лайка от пользователя ID %d.", filmId, userId));
+        } else {
+            eventService.addEvent(userId, EventTypes.LIKE, OperationTypes.REMOVE, filmId);
+            log.info("FilmService: Добавлено событие (remove like) в ленту пользователя");
         }
     }
 

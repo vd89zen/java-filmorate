@@ -23,3 +23,19 @@ INSERT INTO rating_mpaa (name)
 SELECT 'R' WHERE NOT EXISTS (SELECT 1 FROM rating_mpaa WHERE name = 'R');
 INSERT INTO rating_mpaa (name)
 SELECT 'NC-17' WHERE NOT EXISTS (SELECT 1 FROM rating_mpaa WHERE name = 'NC-17');
+
+-- Заполняем таблицу event_types (если записи ещё отсутствуют)
+INSERT INTO event_types (id, name)
+SELECT 1, 'LIKE' WHERE NOT EXISTS (SELECT 1 FROM event_types WHERE id = 1);
+INSERT INTO event_types (id, name)
+SELECT 2, 'REVIEW' WHERE NOT EXISTS (SELECT 1 FROM event_types WHERE id = 2);
+INSERT INTO event_types (id, name)
+SELECT 3, 'FRIEND' WHERE NOT EXISTS (SELECT 1 FROM event_types WHERE id = 3);
+
+-- Заполняем таблицу operation_types (если записи ещё отсутствуют)
+INSERT INTO operation_types (id, name)
+SELECT 1, 'ADD' WHERE NOT EXISTS (SELECT 1 FROM operation_types WHERE id = 1);
+INSERT INTO operation_types (id, name)
+SELECT 2, 'UPDATE' WHERE NOT EXISTS (SELECT 1 FROM operation_types WHERE id = 2);
+INSERT INTO operation_types (id, name)
+SELECT 3, 'REMOVE' WHERE NOT EXISTS (SELECT 1 FROM operation_types WHERE id = 3);

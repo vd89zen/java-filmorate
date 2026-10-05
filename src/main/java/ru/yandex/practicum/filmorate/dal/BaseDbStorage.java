@@ -2,7 +2,7 @@ package ru.yandex.practicum.filmorate.dal;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import java.sql.PreparedStatement;
@@ -12,7 +12,7 @@ import java.util.Optional;
 
 @RequiredArgsConstructor
 public class BaseDbStorage<T> {
-    protected final JdbcTemplate jdbc;
+    protected final JdbcOperations jdbc;
     protected final RowMapper<T> mapper;
     private static final String CANT_UPDATE = "Не удалось обновить данные в БД.";
 

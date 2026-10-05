@@ -2,7 +2,7 @@ package ru.yandex.practicum.filmorate.dal;
 
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -50,10 +50,10 @@ public class FriendshipDbStorage {
         GROUP BY user_id
         """;
 
-    private  final JdbcTemplate jdbc;
+    private  final JdbcOperations jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
 
-    public FriendshipDbStorage(JdbcTemplate jdbc) {
+    public FriendshipDbStorage(JdbcOperations jdbc) {
         this.jdbc = jdbc;
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }

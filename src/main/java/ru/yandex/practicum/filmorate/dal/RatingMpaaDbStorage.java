@@ -1,7 +1,7 @@
 package ru.yandex.practicum.filmorate.dal;
 
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.RatingMpaa;
@@ -13,7 +13,7 @@ public class RatingMpaaDbStorage extends BaseDbStorage<RatingMpaa> {
     private static final String FIND_ALL_RATING_QUERY = "SELECT id, name FROM rating_mpaa ORDER BY id";
     private static final String FIND_RATING_BY_ID_QUERY = "SELECT id, name FROM rating_mpaa WHERE id = ?";
 
-    public RatingMpaaDbStorage(JdbcTemplate jdbc, RowMapper<RatingMpaa> mapper) {
+    public RatingMpaaDbStorage(JdbcOperations jdbc, RowMapper<RatingMpaa> mapper) {
         super(jdbc, mapper);
     }
 
