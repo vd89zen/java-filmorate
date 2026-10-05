@@ -3,6 +3,7 @@ package ru.yandex.practicum.filmorate.service;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dal.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.dto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
@@ -32,6 +33,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public UserDto create(NewUserRequest newUserRequest) {
         log.info("Создание нового пользователя: {}.", newUserRequest);
 
@@ -68,6 +70,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional
     public UserDto update(UpdateUserRequest updateUserRequest) {
         log.info("Обновление пользователя: {}.", updateUserRequest);
 
@@ -87,6 +90,7 @@ public class UserService {
         log.info("Пользователь ID {} успешно удалён.", userId);
     }
 
+    @Transactional
     public void addFriend(Long userId, Long friendId) {
         if (userId.equals(friendId)) {
             throw new ValidationException(ValidationError.builder()
@@ -108,6 +112,7 @@ public class UserService {
         }
     }
 
+    @Transactional
     public void removeFriend(Long userId, Long friendId) {
         checkUserExists(userId);
         checkUserExists(friendId);
@@ -121,6 +126,7 @@ public class UserService {
         }
     }
 
+    @Transactional(readOnly = true)
     public List<UserDto> getUserFriends(Long userId) {
         log.info("Получение списка друзей пользователя ID {}.", userId);
         checkUserExists(userId);
@@ -132,6 +138,7 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
     public List<UserDto> getCommonFriends(Long userId, Long otherUserId) {
         log.info("Получение списка общих друзей пользователей ID {} и {}.", userId, otherUserId);
         checkUserExists(userId);
@@ -145,10 +152,18 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    public List<Event> getFeed(Long userId) {
-        log.info("Получение ленты событий пользователя ID {}.", userId);
+    @Transactional(readOnly = true)
+    public List<Event> getFeedFriends(Long userId) {
+        log.info("Получение событий друзей пользователя ID {}.", userId);
         checkUserExists(userId);
-        return eventService.getFeed(userId);
+        return eventService.getFeedFriends(userId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Event> getFeedUser(Long userId) {
+        log.info("Получение событий пользователя ID {}.", userId);
+        checkUserExists(userId);
+        return eventService.getFeedUser(userId);
     }
 
     private User getUserOrThrow(Long id) {

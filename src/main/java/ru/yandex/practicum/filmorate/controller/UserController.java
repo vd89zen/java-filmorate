@@ -82,9 +82,15 @@ public class UserController {
                 .ok(userService.getCommonFriends(userId, friendId));
     }
 
-    @GetMapping("/{userId}/feed")
-    public ResponseEntity<List<Event>> getFeed(@PathVariable Long userId) {
+    @GetMapping("/{userId}/feed/friends")
+    public ResponseEntity<List<Event>> getFeedFriends(@PathVariable Long userId) {
         return ResponseEntity
-                .ok(userService.getFeed(userId));
+                .ok(userService.getFeedFriends(userId));
+    }
+
+    @GetMapping("/{userId}/feed/user")
+    public ResponseEntity<List<Event>> getFeedUser(@PathVariable Long userId) {
+        return ResponseEntity
+                .ok(userService.getFeedUser(userId));
     }
 }

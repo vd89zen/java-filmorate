@@ -31,6 +31,7 @@ class FriendshipDbStorageTest {
 
     @BeforeEach
     void setUp() {
+        cleanUp();
         storage = new FriendshipDbStorage(jdbcTemplate);
         userId1 = createTestUser();
         userId2 = createTestUser();
@@ -40,9 +41,17 @@ class FriendshipDbStorageTest {
 
     @AfterEach
     void tearDown() {
+        cleanUp();
+    }
+
+    private void cleanUp() {
         jdbcTemplate.execute("DELETE FROM friendship");
+        jdbcTemplate.execute("DELETE FROM film_likes");
+        jdbcTemplate.execute("DELETE FROM film_genres");
+        jdbcTemplate.execute("DELETE FROM films");
         jdbcTemplate.execute("DELETE FROM users");
     }
+
 
     private Long createTestUser() {
         User user = User.builder()

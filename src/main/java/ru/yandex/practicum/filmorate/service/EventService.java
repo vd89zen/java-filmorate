@@ -21,14 +21,20 @@ public class EventService {
     }
 
     @Transactional
-    public List<Event> getFeed(Long userId) {
-        log.info("EventService: Получение ленты событий user ID {}", userId);
-        return List.copyOf(eventsDbStorage.getFeed(userId));
+    public List<Event> getFeedFriends(Long userId) {
+        log.info("EventService: Получение ленты событий друзей пользователя ID {}", userId);
+        return List.copyOf(eventsDbStorage.getFeedFriends(userId));
+    }
+
+    @Transactional
+    public List<Event> getFeedUser(Long userId) {
+        log.info("EventService: Получение ленты событий пользователя ID {}", userId);
+        return List.copyOf(eventsDbStorage.getFeedUser(userId));
     }
 
     @Transactional
     public Event addEvent(Long userId, EventTypes event, OperationTypes operation, Long entityId) {
-        log.info("EventService: Добавление события {}-{} в ленту user ID {}", event, operation, userId);
+        log.info("EventService: Добавление события {}-{} в ленту пользователя ID {}", event, operation, userId);
         return eventsDbStorage.addEvent(userId, event, operation, entityId);
     }
 }

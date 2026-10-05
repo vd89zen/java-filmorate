@@ -24,8 +24,19 @@ class UserDbStorageTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @BeforeEach
+    void setUp() {
+        cleanUp();
+    }
+
     @AfterEach
     void tearDown() {
+        cleanUp();
+    }
+
+    private void cleanUp() {
+        jdbcTemplate.execute("DELETE FROM friendship");
+        jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM users");
     }
 

@@ -35,6 +35,7 @@ class FilmGenresDbStorageTest {
 
     @BeforeEach
     void setUp() {
+        cleanUp();
         filmGenresStorage = new FilmGenresDbStorage(jdbcTemplate);
         filmId = createTestFilm();
         filmIdTo = createTestFilm();
@@ -44,6 +45,11 @@ class FilmGenresDbStorageTest {
 
     @AfterEach
     void tearDown() {
+        cleanUp();
+    }
+
+    private void cleanUp() {
+        jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM film_genres");
         jdbcTemplate.execute("DELETE FROM films");
     }

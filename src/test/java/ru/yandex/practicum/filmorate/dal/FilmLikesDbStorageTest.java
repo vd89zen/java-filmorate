@@ -36,6 +36,7 @@ class FilmLikesDbStorageTest {
 
     @BeforeEach
     void setUp() {
+        cleanUp();
         storage = new FilmLikesDbStorage(jdbcTemplate);
         filmId1 = createTestFilm();
         filmId2 = createTestFilm();
@@ -47,6 +48,11 @@ class FilmLikesDbStorageTest {
 
     @AfterEach
     void tearDown() {
+        cleanUp();
+    }
+
+    private void cleanUp() {
+        jdbcTemplate.execute("DELETE FROM friendship");
         jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM films");
         jdbcTemplate.execute("DELETE FROM users");

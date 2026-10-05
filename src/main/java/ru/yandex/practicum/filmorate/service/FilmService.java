@@ -110,7 +110,7 @@ public class FilmService {
         return filmDto;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public FilmDto findById(Long filmId) {
         log.info("Поиск фильма ID {}.", filmId);
         Film film = getFilmOrThrow(filmId);
@@ -128,7 +128,7 @@ public class FilmService {
         return filmDto;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FilmDto> findAll() {
         log.info("Получение списка всех фильмов.");
         List<Film> films = filmStorage.findAll();
@@ -201,7 +201,7 @@ public class FilmService {
         }
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FilmDto> getTopPopularFilms(Integer count) {
         log.info("Получение списка из {} самых популярных фильмов", count);
         LinkedHashMap<Long, Integer> filmsLikes = filmLikesDbStorage.getTopPopularFilmsIds(count);
@@ -229,7 +229,7 @@ public class FilmService {
         return topFilms;
     }
 
-    @Transactional
+    @Transactional(readOnly = true)
     public List<FilmDto> getCommonFilms(Long userId, Long otherUserId) {
         log.info("Получение общих фильмов пользователей ID {} и ID {}.", userId, otherUserId);
 
