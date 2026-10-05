@@ -5,11 +5,7 @@ import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
-import java.sql.ResultSet;
-import java.util.HashSet;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Repository
@@ -93,17 +89,8 @@ public class FilmLikesDbStorage {
     }
 
     public Set<Long> getFilmsIdsLikedByUser(Long userId) {
-        MapSqlParameterSource params = new MapSqlParameterSource("userId", userId);
-        return namedJdbc.query(
-                FIND_FILMS_IDS_LIKED_USER_QUERY, params,
-                (ResultSet rs) -> {
-                    Set<Long> set = new HashSet<>();
-                    while (rs.next()) {
-                        set.add(rs.getLong("film_id"));
-                    }
-                    return set;
-                }
-        );
+        List<Long> list = jdbc.queryForList(FIND_FILMS_IDS_LIKED_USER_QUERY, Long.class, userId);
+        return new HashSet<>(list);
     }
 
     public LinkedHashMap<Long, Integer> getTopPopularFilmsIds(int count) {
