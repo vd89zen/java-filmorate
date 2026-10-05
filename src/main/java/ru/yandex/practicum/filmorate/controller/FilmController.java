@@ -30,12 +30,6 @@ public class FilmController {
                 .body(filmService.create(newFilmRequest));
     }
 
-    @PutMapping
-    public ResponseEntity<FilmDto> update(@Valid @RequestBody UpdateFilmRequest updateFilmRequest) {
-        return ResponseEntity
-                .ok(filmService.update(updateFilmRequest));
-    }
-
     @GetMapping("/{filmId}")
     public ResponseEntity<FilmDto> findById(@PathVariable @NotNull @Positive Long filmId) {
         return ResponseEntity
@@ -46,6 +40,18 @@ public class FilmController {
     public ResponseEntity<Collection<FilmDto>> findAll() {
         return ResponseEntity
                 .ok(filmService.findAll());
+    }
+
+    @PutMapping
+    public ResponseEntity<FilmDto> update(@Valid @RequestBody UpdateFilmRequest updateFilmRequest) {
+        return ResponseEntity
+                .ok(filmService.update(updateFilmRequest));
+    }
+
+    @DeleteMapping("/{filmId}")
+    public ResponseEntity<Void> delete(@PathVariable Long filmId) {
+        filmService.delete(filmId);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{filmId}/like/{userId}")

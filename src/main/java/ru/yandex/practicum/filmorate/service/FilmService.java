@@ -32,6 +32,12 @@ public class FilmService {
     private final GenreService genreService;
     private final RatingMpaaService ratingMpaaService;
 
+    public void checkFilmExists(Long filmId) {
+        if (filmStorage.isFilmExists(filmId) == false) {
+            throw new NotFoundException(String.format(FILM_NOT_FOUND, filmId));
+        }
+    }
+
     @Transactional
     public FilmDto create(NewFilmRequest newFilmRequest) {
         log.info("Создание нового фильма: {}", newFilmRequest);
@@ -150,17 +156,12 @@ public class FilmService {
                 }).collect(Collectors.toList());
     }
 
-    public void checkFilmExists(Long filmId) {
-        if (filmStorage.isFilmExists(filmId) == false) {
-            throw new NotFoundException(String.format(FILM_NOT_FOUND, filmId));
-        }
-    }
-
     public void delete(Long filmId) {
         log.info("Удаление фильма ID {}.", filmId);
         if (filmStorage.delete(filmId) == false) {
             throw new NotFoundException(String.format(FILM_NOT_FOUND, filmId));
         }
+        log.info("Фильм ID {} успешно удалён.", filmId);
     }
 
     @Transactional
@@ -279,5 +280,4 @@ public class FilmService {
     private Map<Long, Integer> getLikesCountByFilmsIds(Set<Long> filmsIds) {
         return filmLikesDbStorage.getLikesCountByFilmsIds(filmsIds);
     }
-
 }

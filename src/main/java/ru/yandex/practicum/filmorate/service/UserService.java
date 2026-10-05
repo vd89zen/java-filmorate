@@ -21,6 +21,12 @@ public class UserService {
     private final UserStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
 
+    public void checkUserExists(Long userId) {
+        if (userStorage.isUserExists(userId) == false) {
+            throw new NotFoundException(String.format("Пользователь с id = %d не найден.", userId));
+        }
+    }
+
     public UserDto create(NewUserRequest newUserRequest) {
         log.info("Создание нового пользователя: {}.", newUserRequest);
 
@@ -42,6 +48,21 @@ public class UserService {
         return UserMapper.mapToUserDto(newUser);
     }
 
+    public UserDto findById(Long userId) {
+        log.info("Поиск пользователя ID {}.", userId);
+        User user = getUserOrThrow(userId);
+        return UserMapper.mapToUserDto(user);
+    }
+
+    public List<UserDto> findAll() {
+        log.info("Получение списка всех пользователей.");
+        List<User> users = userStorage.findAll();
+
+        return users.stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toList());
+    }
+
     public UserDto update(UpdateUserRequest updateUserRequest) {
         log.info("Обновление пользователя: {}.", updateUserRequest);
 
@@ -58,32 +79,7 @@ public class UserService {
         if (userStorage.delete(userId) == false) {
             throw new NotFoundException(String.format("Пользователь с id = %d не найден.", userId));
         }
-    }
-
-    public UserDto findById(Long userId) {
-        log.info("Поиск пользователя ID {}.", userId);
-        User user = getUserOrThrow(userId);
-        return UserMapper.mapToUserDto(user);
-    }
-
-    public List<UserDto> findAll() {
-        log.info("Получение списка всех пользователей.");
-        List<User> users = userStorage.findAll();
-
-        return users.stream()
-                .map(UserMapper::mapToUserDto)
-                .collect(Collectors.toList());
-    }
-
-    public void checkUserExists(Long userId) {
-        if (userStorage.isUserExists(userId) == false) {
-            throw new NotFoundException(String.format("Пользователь с id = %d не найден.", userId));
-        }
-    }
-
-    private User getUserOrThrow(Long id) {
-        return userStorage.findById(id)
-                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id = %d не найден.", id)));
+        log.info("Пользователь ID {} успешно удалён.", userId);
     }
 
     public void addFriend(Long userId, Long friendId) {
@@ -127,5 +123,10 @@ public class UserService {
         return commonFriends.stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
+    }
+
+    private User getUserOrThrow(Long id) {
+        return userStorage.findById(id)
+                .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id = %d не найден.", id)));
     }
 }

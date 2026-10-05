@@ -30,16 +30,10 @@ public class UserController {
                 .body(userService.create(newUserRequest));
     }
 
-    @PutMapping
-    public ResponseEntity<UserDto> update(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
+    @GetMapping("/{userId}")
+    public ResponseEntity<UserDto> findById(@PathVariable @NotNull @Positive Long userId) {
         return ResponseEntity
-                .ok(userService.update(updateUserRequest));
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserDto> findById(@PathVariable @NotNull @Positive Long id) {
-        return ResponseEntity
-                .ok(userService.findById(id));
+                .ok(userService.findById(userId));
     }
 
     @GetMapping
@@ -48,30 +42,42 @@ public class UserController {
                 .ok(userService.findAll());
     }
 
-    @PutMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> addFriend(@PathVariable @NotNull @Positive Long id,
-                                          @PathVariable @NotNull @Positive Long friendId) {
-        userService.addFriend(id, friendId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{id}/friends/{friendId}")
-    public ResponseEntity<Void> removeFriend(@PathVariable @NotNull @Positive Long id,
-                                             @PathVariable @NotNull @Positive Long friendId) {
-        userService.removeFriend(id, friendId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{id}/friends")
-    public ResponseEntity<List<UserDto>> getFriends(@PathVariable @NotNull @Positive Long id) {
+    @PutMapping
+    public ResponseEntity<UserDto> update(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
         return ResponseEntity
-                .ok(userService.getUserFriends(id));
+                .ok(userService.update(updateUserRequest));
     }
 
-    @GetMapping("/{id}/friends/common/{friendId}")
-    public ResponseEntity<List<UserDto>> getCommonFriends(@PathVariable @NotNull @Positive Long id,
+    @DeleteMapping("/{userId}")
+    public ResponseEntity<Void> delete(@PathVariable Long userId) {
+        userService.delete(userId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/{userId}/friends/{friendId}")
+    public ResponseEntity<Void> addFriend(@PathVariable @NotNull @Positive Long userId,
+                                          @PathVariable @NotNull @Positive Long friendId) {
+        userService.addFriend(userId, friendId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{userId}/friends/{friendId}")
+    public ResponseEntity<Void> removeFriend(@PathVariable @NotNull @Positive Long userId,
+                                             @PathVariable @NotNull @Positive Long friendId) {
+        userService.removeFriend(userId, friendId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/{userId}/friends")
+    public ResponseEntity<List<UserDto>> getFriends(@PathVariable @NotNull @Positive Long userId) {
+        return ResponseEntity
+                .ok(userService.getUserFriends(userId));
+    }
+
+    @GetMapping("/{userId}/friends/common/{friendId}")
+    public ResponseEntity<List<UserDto>> getCommonFriends(@PathVariable @NotNull @Positive Long userId,
                                                       @PathVariable @NotNull @Positive Long friendId) {
         return ResponseEntity
-                .ok(userService.getCommonFriends(id, friendId));
+                .ok(userService.getCommonFriends(userId, friendId));
     }
 }
