@@ -19,7 +19,7 @@ public class FilmLikesDbStorage {
     private static final String GET_LIKES_COUNT_OF_ONE_FILM_QUERY = """
             SELECT COUNT(user_id)
             FROM film_likes
-            WHERE film_id = :filmId
+            WHERE film_id = ?
             """;
     private static final String CHECK_USER_ALREADY_LIKED = """
             SELECT EXISTS(
