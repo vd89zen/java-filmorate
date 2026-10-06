@@ -6,12 +6,11 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.User;
-import ru.yandex.practicum.filmorate.model.interfaces.UserStorage;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
+public class UserDbStorage extends BaseDbStorage<User> {
     private static final String DELETE_USER_QUERY = "DELETE FROM users WHERE id = ?";
     private static final String FIND_BY_EMAIL_QUERY = "SELECT * FROM users WHERE email = ?";
     private static final String IS_USER_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
@@ -27,10 +26,11 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
         WHERE id IN (:usersIds)
         ORDER BY id
         """;
-    private static final String FIND_ALL_USERS_QUERY = """
+    private static final String FIND_ALL_USERS_PAGINATED_QUERY = """
         SELECT id, email, login, name, birthday
         FROM users
         ORDER BY id
+        LIMIT ? OFFSET ?
         """;
     private static final String INSERT_USER_QUERY = """
         INSERT INTO users(email, login, name, birthday)
@@ -49,19 +49,17 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }
 
-    @Override
     public User create(User newUser) {
         Long returnedId = insert(INSERT_USER_QUERY,
-                newUser.getEmail().toLowerCase(),
-                newUser.getLogin().toLowerCase(),
-                newUser.getName().toLowerCase(),
+                newUser.getEmail(),
+                newUser.getLogin(),
+                newUser.getName(),
                 newUser.getBirthday()
         );
         newUser.setId(returnedId);
         return newUser;
     }
 
-    @Override
     public void update(User updatingUser) {
         update(UPDATE_USER_QUERY,
                 updatingUser.getEmail(),
@@ -71,37 +69,30 @@ public class UserDbStorage extends BaseDbStorage<User> implements UserStorage {
                 updatingUser.getId());
     }
 
-    @Override
-    public List<User> findAll() {
-        return findMany(FIND_ALL_USERS_QUERY);
+    public List<User> findAll(int from, int size) {
+        return findMany(FIND_ALL_USERS_PAGINATED_QUERY, size, from);
     }
 
-    @Override
     public Optional<User> findById(Long userId) {
         return findOne(FIND_USER_BY_ID_QUERY, userId);
     }
 
-    @Override
     public Optional<User> findByEmail(String email) {
         return findOne(FIND_BY_EMAIL_QUERY, email);
     }
 
-    @Override
     public boolean isEmailAlreadyUse(String email) {
         return jdbc.queryForObject(IS_EMAIL_ALREADY_USE_QUERY, Boolean.class, email);
     }
 
-    @Override
     public boolean isUserExists(Long userId) {
         return jdbc.queryForObject(IS_USER_EXISTS_QUERY, Boolean.class, userId);
     }
 
-    @Override
     public boolean delete(Long userId) {
         return delete(DELETE_USER_QUERY, userId);
     }
 
-    @Override
     public List<User> findBySeveralIds(List<Long> usersIds) {
         MapSqlParameterSource param = new MapSqlParameterSource("usersIds", usersIds);
         return namedJdbc.query(FIND_USERS_BY_IDS_QUERY, param, mapper);

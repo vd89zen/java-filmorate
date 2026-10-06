@@ -15,7 +15,7 @@ public class FilmLikesDbStorage {
     private static final String FIND_FILMS_IDS_LIKED_USER_QUERY = """
             SELECT film_id
             FROM film_likes
-            WHERE user_id = :userId
+            WHERE user_id = ?
             """;
     private static final String GET_LIKES_COUNT_OF_ONE_FILM_QUERY = """
             SELECT COUNT(user_id)

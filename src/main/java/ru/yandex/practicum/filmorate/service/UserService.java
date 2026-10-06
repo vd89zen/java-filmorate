@@ -5,17 +5,17 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dal.FriendshipDbStorage;
+import ru.yandex.practicum.filmorate.dal.UserDbStorage;
 import ru.yandex.practicum.filmorate.dto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto;
+import ru.yandex.practicum.filmorate.dto.UserShortDto;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
-import ru.yandex.practicum.filmorate.model.interfaces.UserStorage;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -23,7 +23,7 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 public class UserService {
-    private final UserStorage userStorage;
+    private final UserDbStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
     private final EventService eventService;
 
@@ -34,25 +34,26 @@ public class UserService {
     }
 
     @Transactional
-    public UserDto create(NewUserRequest newUserRequest) {
-        log.info("Создание нового пользователя: {}.", newUserRequest);
+    public UserDto create(NewUserRequest request) {
+        log.info("Создание нового пользователя: {}.", request);
 
-        if (userStorage.isEmailAlreadyUse(newUserRequest.getEmail())) {
+        if (userStorage.isEmailAlreadyUse(normalizeCredential(request.getEmail()))) {
             throw new ValidationException(ValidationError.builder()
                     .field("email")
                     .message("Данный email уже используется.")
-                    .rejectedValue(newUserRequest.getEmail())
+                    .rejectedValue(request.getEmail())
                     .build());
         }
 
-        if (newUserRequest.getName().isBlank()) {
-            newUserRequest.setName(newUserRequest.getLogin());
-            log.info("Так как имя пользователя не указано, для него использован login {}.", newUserRequest.getLogin());
+        if (request.getName() == null || request.getName().isBlank()) {
+            request.setName(request.getLogin());
+            log.info("Так как имя пользователя не указано, для него использован login {}.", request.getLogin());
         }
 
-        User newUser = UserMapper.mapToUser(newUserRequest);
-        newUser = userStorage.create(newUser);
-        return UserMapper.mapToUserDto(newUser);
+        User newUser = UserMapper.mapToUser(request);
+        normalizeUser(newUser);
+        User savedUser = userStorage.create(newUser);
+        return UserMapper.mapToUserDto(savedUser);
     }
 
     public UserDto findById(Long userId) {
@@ -61,25 +62,52 @@ public class UserService {
         return UserMapper.mapToUserDto(user);
     }
 
-    public List<UserDto> findAll() {
-        log.info("Получение списка всех пользователей.");
-        List<User> users = userStorage.findAll();
+    public List<UserDto> findAll(int from, int size) {
+        log.info("Получение списка пользователей: from={}, size={}.", from, size);
+        List<User> users = userStorage.findAll(from, size);
 
         return users.stream()
                 .map(UserMapper::mapToUserDto)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Батч-получение пользователей(полный объект) по набору id.
+     * Используется для обогащения ленты событий, чтобы не было N+1.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, UserDto> findByIds(Set<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userStorage.findBySeveralIds(new ArrayList<>(userIds)).stream()
+                .map(UserMapper::mapToUserDto)
+                .collect(Collectors.toMap(UserDto::getId, userDto -> userDto));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, UserShortDto> findShortByIds(Set<Long> userIds) {
+        if (userIds == null || userIds.isEmpty()) {
+            return Map.of();
+        }
+        return userStorage.findBySeveralIds(new ArrayList<>(userIds)).stream()
+                .collect(Collectors.toMap(
+                        User::getId,
+                        user -> UserShortDto.builder()
+                                .id(user.getId())
+                                .name(user.getName())
+                                .build()));
+    }
+
     @Transactional
-    public UserDto update(UpdateUserRequest updateUserRequest) {
-        log.info("Обновление пользователя: {}.", updateUserRequest);
-
-        Long userId = updateUserRequest.getId();
-        User updatingUser = getUserOrThrow(userId);
-        updatingUser = UserMapper.updateUserFields(updatingUser, updateUserRequest);
-        userStorage.update(updatingUser);
-
-        return UserMapper.mapToUserDto(updatingUser);
+    public UserDto update(UpdateUserRequest request) {
+        log.info("Обновление пользователя: {}.", request);
+        Long userId = request.getId();
+        User user = getUserOrThrow(userId);
+        UserMapper.updateUserFields(user, request);
+        normalizeUser(user);
+        userStorage.update(user);
+        return UserMapper.mapToUserDto(user);
     }
 
     public void delete(Long userId) {
@@ -152,22 +180,17 @@ public class UserService {
                 .collect(Collectors.toList());
     }
 
-    @Transactional(readOnly = true)
-    public List<Event> getFeedFriends(Long userId) {
-        log.info("Получение событий друзей пользователя ID {}.", userId);
-        checkUserExists(userId);
-        return eventService.getFeedFriends(userId);
-    }
-
-    @Transactional(readOnly = true)
-    public List<Event> getFeedUser(Long userId) {
-        log.info("Получение событий пользователя ID {}.", userId);
-        checkUserExists(userId);
-        return eventService.getFeedUser(userId);
-    }
-
     private User getUserOrThrow(Long id) {
         return userStorage.findById(id)
                 .orElseThrow(() -> new NotFoundException(String.format("Пользователь с id = %d не найден.", id)));
+    }
+
+    private void normalizeUser(User user) {
+        user.setEmail(normalizeCredential(user.getEmail()));
+        user.setLogin(normalizeCredential(user.getLogin()));
+    }
+
+    private String normalizeCredential(String value) {
+        return value == null ? null : value.trim().toLowerCase(Locale.ROOT);
     }
 }

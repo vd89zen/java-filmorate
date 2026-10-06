@@ -6,18 +6,18 @@ import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Film;
-import ru.yandex.practicum.filmorate.model.interfaces.FilmStorage;
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
+public class FilmDbStorage extends BaseDbStorage<Film> {
     private static final String DELETE_FILM_QUERY = "DELETE FROM films WHERE id = ?";
     private static final String IS_FILM_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM films WHERE id = ? LIMIT 1)";
-    private static final String FIND_ALL_FILMS_QUERY = """
+    private static final String FIND_ALL_FILMS_PAGINATED_QUERY = """
         SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
         FROM films f
         ORDER BY f.id
+        LIMIT ? OFFSET ?
         """;
     private static final String FIND_FILM_BY_ID_QUERY = """
         SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
@@ -46,7 +46,6 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         this.namedJdbc = new NamedParameterJdbcTemplate(jdbc);
     }
 
-    @Override
     public Film create(Film newFilm) {
         Long returnedId = insert(INSERT_FILM_QUERY,
                 newFilm.getName(),
@@ -59,7 +58,6 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
         return newFilm;
     }
 
-    @Override
     public void update(Film updatingFilm) {
         update(UPDATE_FILM_QUERY,
                 updatingFilm.getName(),
@@ -70,28 +68,23 @@ public class FilmDbStorage extends BaseDbStorage<Film> implements FilmStorage {
                 updatingFilm.getId());
     }
 
-    @Override
-    public List<Film> findAll() {
-        return findMany(FIND_ALL_FILMS_QUERY);
+    public List<Film> findAll(int from, int size) {
+        return findMany(FIND_ALL_FILMS_PAGINATED_QUERY, size, from);
     }
 
-    @Override
     public Optional<Film> findById(Long filmId) {
         return findOne(FIND_FILM_BY_ID_QUERY, filmId);
     }
 
-    @Override
     public boolean delete(Long filmId) {
         return delete(DELETE_FILM_QUERY, filmId);
     }
 
-    @Override
     public List<Film> findBySeveralIds(List<Long> filmsIds) {
         MapSqlParameterSource param = new MapSqlParameterSource("filmsIds", filmsIds);
         return namedJdbc.query(FIND_FILMS_BY_IDS_QUERY, param, mapper);
     }
 
-    @Override
     public boolean isFilmExists(Long filmId) {
         return jdbc.queryForObject(IS_FILM_EXISTS_QUERY, Boolean.class, filmId);
     }

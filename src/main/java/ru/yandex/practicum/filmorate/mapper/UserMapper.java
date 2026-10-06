@@ -29,23 +29,21 @@ public final class UserMapper {
         return userDto;
     }
 
-    public static User updateUserFields(User updatingUser, UpdateUserRequest request) {
+    public static void updateUserFields(User user, UpdateUserRequest request) {
         if (request.hasEmail()) {
-            updatingUser.setEmail(request.getEmail());
+            user.setEmail(request.getEmail());
         }
 
         if (request.hasLogin()) {
-            updatingUser.setLogin(request.getLogin());
+            user.setLogin(request.getLogin());
         }
 
         if (request.hasName()) {
-            updatingUser.setName(request.getName());
+            user.setName(request.getName());
         }
 
         if (request.hasBirthday()) {
-            updatingUser.setBirthday(request.getBirthday());
+            user.setBirthday(request.getBirthday());
         }
-
-        return updatingUser;
     }
 }

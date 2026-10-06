@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.yandex.practicum.filmorate.dal.FilmDbStorage;
 import ru.yandex.practicum.filmorate.dal.FilmGenresDbStorage;
 import ru.yandex.practicum.filmorate.dal.FilmLikesDbStorage;
 import ru.yandex.practicum.filmorate.dto.*;
@@ -16,7 +17,6 @@ import ru.yandex.practicum.filmorate.mapper.FilmMapper;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
-import ru.yandex.practicum.filmorate.model.interfaces.FilmStorage;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class FilmService {
     private static final LocalDate MOVIE_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private static final String FILM_NOT_FOUND = "Фильм с id = %d не найден.";
-    private final FilmStorage filmStorage;
+    private final FilmDbStorage filmStorage;
     private final FilmGenresDbStorage filmGenresDbStorage;
     private final FilmLikesDbStorage filmLikesDbStorage;
     private final UserService userService;
@@ -117,7 +117,7 @@ public class FilmService {
         FilmDto filmDto = FilmMapper.mapToDto(film);
 
         GenreMapper.toDtoSet(
-                filmGenresDbStorage.getGenresOfFilm(filmId))
+                        filmGenresDbStorage.getGenresOfFilm(filmId))
                 .forEach(filmDto.getGenres()::add);
 
         filmDto.setMpa(
@@ -129,9 +129,9 @@ public class FilmService {
     }
 
     @Transactional(readOnly = true)
-    public List<FilmDto> findAll() {
-        log.info("Получение списка всех фильмов.");
-        List<Film> films = filmStorage.findAll();
+    public List<FilmDto> findAll(int from, int size) {
+        log.info("Получение списка фильмов: from={}, size={}.", from, size);
+        List<Film> films = filmStorage.findAll(from, size);
         if (films.isEmpty()) {
             return List.of();
         }
@@ -151,12 +151,58 @@ public class FilmService {
                     long mpaId = filmDto.getMpa().getId();
                     filmDto.setMpa(mpaDto.get(mpaId));
                     GenreMapper.toDtoSet(
-                            genres.getOrDefault(filmDto.getId(), List.of()))
+                                    genres.getOrDefault(filmDto.getId(), List.of()))
                             .forEach(filmDto.getGenres()::add);
                     filmDto.setLikesCount(
                             likesCount.getOrDefault(filmDto.getId(), 0));
                     return filmDto;
                 }).collect(Collectors.toList());
+    }
+
+    /**
+     * Батч-получение фильмов(полный объект) по набору id.
+     * Используется для обогащения ленты событий, чтобы не было N+1.
+     */
+    @Transactional(readOnly = true)
+    public Map<Long, FilmDto> findByIds(Set<Long> filmIds) {
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Map.of();
+        }
+        List<Film> films = filmStorage.findBySeveralIds(new ArrayList<>(filmIds));
+        if (films.isEmpty()) {
+            return Map.of();
+        }
+
+        Map<Long, RatingMpaaDto> mpaDto = ratingMpaaService.findAll().stream()
+                .collect(Collectors.toMap(RatingMpaaDto::getId, ratingMpaaDto -> ratingMpaaDto));
+        Map<Long, List<Genre>> genres = filmGenresDbStorage.getGenresByFilmsIds(filmIds);
+        Map<Long, Integer> likesCount = getLikesCountByFilmsIds(filmIds);
+
+        return films.stream()
+                .map(FilmMapper::mapToDto)
+                .map(filmDto -> {
+                    filmDto.setMpa(mpaDto.get(filmDto.getMpa().getId()));
+                    GenreMapper.toDtoSet(genres.getOrDefault(filmDto.getId(), List.of()))
+                            .forEach(filmDto.getGenres()::add);
+                    filmDto.setLikesCount(likesCount.getOrDefault(filmDto.getId(), 0));
+                    return filmDto;
+                })
+                .collect(Collectors.toMap(FilmDto::getId, filmDto -> filmDto));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, FilmShortDto> findShortByIds(Set<Long> filmIds) {
+        if (filmIds == null || filmIds.isEmpty()) {
+            return Map.of();
+        }
+        return filmStorage.findBySeveralIds(new ArrayList<>(filmIds)).stream()
+                .collect(Collectors.toMap(
+                        Film::getId,
+                        film -> FilmShortDto.builder()
+                                .id(film.getId())
+                                .name(film.getName())
+                                .releaseDate(film.getReleaseDate())
+                                .build()));
     }
 
     public void delete(Long filmId) {

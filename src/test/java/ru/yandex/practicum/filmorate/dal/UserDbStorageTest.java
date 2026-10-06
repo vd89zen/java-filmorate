@@ -94,7 +94,7 @@ class UserDbStorageTest {
             // given
             User user = storage.create(createTestUser(TEST_EMAIL));
             user.setName("updatedName");
-            user.setLogin("updatedLogin");
+            user.setLogin("updatedlogin");
             user.setEmail("updated@test.com");
             // when
             storage.update(user);
@@ -104,7 +104,7 @@ class UserDbStorageTest {
                     .isPresent()
                     .get()
                     .hasFieldOrPropertyWithValue("name", "updatedName")
-                    .hasFieldOrPropertyWithValue("login", "updatedLogin")
+                    .hasFieldOrPropertyWithValue("login", "updatedlogin")
                     .hasFieldOrPropertyWithValue("email", "updated@test.com");
         }
 
@@ -136,7 +136,7 @@ class UserDbStorageTest {
             User user1 = storage.create(createTestUser(TEST_EMAIL));
             User user2 = storage.create(createTestUser("other@test.com"));
             // when
-            List<User> allUsers = storage.findAll();
+            List<User> allUsers = storage.findAll(0, 2);
             // then
             assertThat(allUsers)
                     .hasSize(2)
@@ -147,7 +147,7 @@ class UserDbStorageTest {
         @DisplayName("Проверяем получение пустого списка когда нет пользователей в базе")
         void findAll_Should_Return_Empty_List_When_No_Users() {
             // given, when
-            List<User> allUsers = storage.findAll();
+            List<User> allUsers = storage.findAll(0, 10);
             // then
             assertThat(allUsers).isEmpty();
         }
@@ -188,7 +188,7 @@ class UserDbStorageTest {
             // given
             User user = storage.create(createTestUser(TEST_EMAIL));
             // when
-            Optional<User> found = storage.findByEmail(user.getEmail());
+            Optional<User> found = storage.findByEmail(user.getEmail().toLowerCase());
             // then
             assertThat(found)
                     .isPresent()

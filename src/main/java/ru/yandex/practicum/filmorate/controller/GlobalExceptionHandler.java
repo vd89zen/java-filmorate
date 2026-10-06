@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller;
 
+import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
@@ -42,6 +43,20 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleNotFoundException(NotFoundException exception) {
         log.error("Ресурс не найден: {}", exception.getMessage());
         List<ValidationError> errors = Collections.singletonList(new ValidationError(null, exception.getMessage(), null));
+        return new ErrorResponse(errors);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({ConstraintViolationException.class})
+    public ErrorResponse handleConstraintViolationException(ConstraintViolationException exception) {
+        List<ValidationError> errors = exception.getConstraintViolations().stream()
+                .map(v -> new ValidationError(
+                        v.getPropertyPath().toString(),
+                        v.getMessage(),
+                        v.getInvalidValue()))
+                .collect(Collectors.toList());
+
+        log.error("Произошла ошибка валидации параметров (ConstraintViolation): {}", errors);
         return new ErrorResponse(errors);
     }
 

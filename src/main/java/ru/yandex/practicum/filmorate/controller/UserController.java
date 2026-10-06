@@ -1,16 +1,20 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.dto.EnrichedEventDto;
 import ru.yandex.practicum.filmorate.dto.NewUserRequest;
 import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.model.Event;
+import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.UserService;
 import java.util.*;
 
@@ -19,16 +23,18 @@ import java.util.*;
 @RequestMapping("/users")
 public class UserController {
     private final UserService userService;
+    private final FeedService feedService;
 
-    public UserController(UserService userService) {
+    public UserController(UserService userService, FeedService feedService) {
         this.userService = userService;
+        this.feedService = feedService;
     }
 
     @PostMapping
-    public ResponseEntity<UserDto> create(@Valid @RequestBody NewUserRequest newUserRequest) {
+    public ResponseEntity<UserDto> create(@Valid @RequestBody NewUserRequest request) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(userService.create(newUserRequest));
+                .body(userService.create(request));
     }
 
     @GetMapping("/{userId}")
@@ -38,15 +44,17 @@ public class UserController {
     }
 
     @GetMapping
-    public ResponseEntity<Collection<UserDto>> findAll() {
+    public ResponseEntity<Collection<UserDto>> findAll(
+            @RequestParam(defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(defaultValue = "10") @Positive @Max(100) int size) {
         return ResponseEntity
-                .ok(userService.findAll());
+                .ok(userService.findAll(from, size));
     }
 
     @PutMapping
-    public ResponseEntity<UserDto> update(@Valid @RequestBody UpdateUserRequest updateUserRequest) {
+    public ResponseEntity<UserDto> update(@Valid @RequestBody UpdateUserRequest request) {
         return ResponseEntity
-                .ok(userService.update(updateUserRequest));
+                .ok(userService.update(request));
     }
 
     @DeleteMapping("/{userId}")
@@ -77,20 +85,36 @@ public class UserController {
 
     @GetMapping("/{userId}/friends/common/{friendId}")
     public ResponseEntity<List<UserDto>> getCommonFriends(@PathVariable @NotNull @Positive Long userId,
-                                                      @PathVariable @NotNull @Positive Long friendId) {
+                                                          @PathVariable @NotNull @Positive Long friendId) {
         return ResponseEntity
                 .ok(userService.getCommonFriends(userId, friendId));
     }
 
+    // «Сырые» ленты событий — id объектов.
+
     @GetMapping("/{userId}/feed/friends")
     public ResponseEntity<List<Event>> getFeedFriends(@PathVariable Long userId) {
         return ResponseEntity
-                .ok(userService.getFeedFriends(userId));
+                .ok(feedService.getFeedFriends(userId));
     }
 
     @GetMapping("/{userId}/feed/user")
     public ResponseEntity<List<Event>> getFeedUser(@PathVariable Long userId) {
         return ResponseEntity
-                .ok(userService.getFeedUser(userId));
+                .ok(feedService.getFeedUser(userId));
+    }
+
+    // Обогащённые ленты событий — с полными FilmDto / UserDto.
+
+    @GetMapping("/{userId}/feed/friends/enriched")
+    public ResponseEntity<List<EnrichedEventDto>> getEnrichedFeedFriends(@PathVariable Long userId) {
+        return ResponseEntity
+                .ok(feedService.getEnrichedFeedFriends(userId));
+    }
+
+    @GetMapping("/{userId}/feed/user/enriched")
+    public ResponseEntity<List<EnrichedEventDto>> getEnrichedFeedUser(@PathVariable Long userId) {
+        return ResponseEntity
+                .ok(feedService.getEnrichedFeedUser(userId));
     }
 }

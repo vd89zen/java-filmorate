@@ -1,8 +1,10 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -37,9 +39,11 @@ public class FilmController {
     }
 
     @GetMapping
-    public ResponseEntity<Collection<FilmDto>> findAll() {
+    public ResponseEntity<Collection<FilmDto>> findAll(
+            @RequestParam(defaultValue = "0") @PositiveOrZero int from,
+            @RequestParam(defaultValue = "10") @Positive @Max(100) int size) {
         return ResponseEntity
-                .ok(filmService.findAll());
+                .ok(filmService.findAll(from, size));
     }
 
     @PutMapping

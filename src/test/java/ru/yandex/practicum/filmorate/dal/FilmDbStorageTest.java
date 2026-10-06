@@ -176,7 +176,7 @@ class FilmDbStorageTest {
             filmStorage.create(film1);
             filmStorage.create(film2);
             // when
-            List<Film> films = filmStorage.findAll();
+            List<Film> films = filmStorage.findAll(0, 2);
             // then
             assertThat(films)
                     .hasSize(2)

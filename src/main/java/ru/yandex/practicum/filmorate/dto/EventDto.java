@@ -1,13 +1,11 @@
-package ru.yandex.practicum.filmorate.model;
+package ru.yandex.practicum.filmorate.dto;
 
 import lombok.*;
 
+@Builder
 @Data
 @EqualsAndHashCode(of = {"id"})
-@AllArgsConstructor
-@NoArgsConstructor
-@Builder
-public class Event {
+public class EventDto {
     private Long eventId;
     private Long timestamp;
     private Long userId;
