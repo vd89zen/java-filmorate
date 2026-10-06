@@ -23,9 +23,9 @@ public class FilmLikesDbStorage {
             WHERE film_id = :filmId
             """;
     private static final String CHECK_USER_ALREADY_LIKED = """
-            SELECT COUNT(*)
-            FROM film_likes
-            WHERE film_id = ? AND user_id = ?
+            SELECT EXISTS(
+            SELECT 1 FROM film_likes
+            WHERE film_id = ? AND user_id = ?)
             """;
     private static final String GET_LIKES_COUNT_OF_FILMS_QUERY = """
             SELECT film_id, COUNT(user_id) AS likes_count
@@ -56,7 +56,8 @@ public class FilmLikesDbStorage {
     }
 
     public boolean hasUserLikedFilm(Long filmId, Long userId) {
-        return jdbc.queryForObject(CHECK_USER_ALREADY_LIKED, Integer.class, filmId, userId) > 0;
+        Boolean exists = jdbc.queryForObject(CHECK_USER_ALREADY_LIKED, Boolean.class, filmId, userId);
+        return Boolean.TRUE.equals(exists);
     }
 
     public boolean addLikeIfNotExists(Long filmId, Long userId) {
@@ -64,12 +65,8 @@ public class FilmLikesDbStorage {
     }
 
     public int getLikesCountOfFilm(Long filmId) {
-        try {
-            MapSqlParameterSource params = new MapSqlParameterSource("filmId", filmId);
-            return namedJdbc.queryForObject(GET_LIKES_COUNT_OF_ONE_FILM_QUERY, params, Integer.class);
-        } catch (EmptyResultDataAccessException e) {
-            return 0;
-        }
+        Integer count = jdbc.queryForObject(GET_LIKES_COUNT_OF_ONE_FILM_QUERY, Integer.class, filmId);
+        return count == null ? 0 : count;
     }
 
     public Map<Long, Integer> getLikesCountByFilmsIds(Set<Long> filmsIds) {

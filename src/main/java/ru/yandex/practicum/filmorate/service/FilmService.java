@@ -70,28 +70,28 @@ public class FilmService {
     }
 
     @Transactional
-    public FilmDto update(UpdateFilmRequest updateFilmRequest) {
-        log.info("Обновление фильма: {}", updateFilmRequest);
+    public FilmDto update(UpdateFilmRequest request) {
+        log.info("Обновление фильма: {}", request);
 
-        if (updateFilmRequest.hasReleaseDate()) {
-            checkDate(updateFilmRequest.getReleaseDate());
+        if (request.hasReleaseDate()) {
+            checkDate(request.getReleaseDate());
         }
 
         RatingMpaaDto ratingMpaaDto = new RatingMpaaDto();
-        if (updateFilmRequest.hasMpa()) {
-            ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(updateFilmRequest.getMpa().getId());
+        if (request.hasMpa()) {
+            ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(request.getMpa().getId());
         }
 
-        Long filmId = updateFilmRequest.getId();
-        Film updatingFilm = getFilmOrThrow(filmId);
-        updatingFilm = FilmMapper.updateFilmFields(updatingFilm, updateFilmRequest);
+        Long filmId = request.getId();
+        Film film = getFilmOrThrow(filmId);
+        FilmMapper.updateFilmFields(film, request);
 
-        filmStorage.update(updatingFilm);
+        filmStorage.update(film);
 
-        FilmDto filmDto = FilmMapper.mapToDto(updatingFilm);
+        FilmDto filmDto = FilmMapper.mapToDto(film);
 
-        if (updateFilmRequest.hasGenres()) {
-            Set<GenreId> genres = updateFilmRequest.getGenres();
+        if (request.hasGenres()) {
+            Set<GenreId> genres = request.getGenres();
             Set<Long> genresIds = GenreMapper.mapGenreIdToIds(genres);
             List<GenreDto> genresDto = genreService.getGenresDto(genresIds);
             log.info("Обновление жанров у фильма {}", filmId);
@@ -100,8 +100,8 @@ public class FilmService {
             genresDto.forEach(filmDto.getGenres()::add);
         }
 
-        if (updateFilmRequest.hasMpa() == false) {
-            ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(updatingFilm.getMpa().getId());
+        if (request.hasMpa() == false) {
+            ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(film.getMpa().getId());
         }
 
         filmDto.setMpa(ratingMpaaDto);

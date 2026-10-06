@@ -82,11 +82,13 @@ public class UserDbStorage extends BaseDbStorage<User> {
     }
 
     public boolean isEmailAlreadyUse(String email) {
-        return jdbc.queryForObject(IS_EMAIL_ALREADY_USE_QUERY, Boolean.class, email);
+        Boolean exists = jdbc.queryForObject(IS_EMAIL_ALREADY_USE_QUERY, Boolean.class, email);
+        return Boolean.TRUE.equals(exists);
     }
 
     public boolean isUserExists(Long userId) {
-        return jdbc.queryForObject(IS_USER_EXISTS_QUERY, Boolean.class, userId);
+        Boolean exists = jdbc.queryForObject(IS_USER_EXISTS_QUERY, Boolean.class, userId);
+        return Boolean.TRUE.equals(exists);
     }
 
     public boolean delete(Long userId) {

@@ -86,6 +86,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
     }
 
     public boolean isFilmExists(Long filmId) {
-        return jdbc.queryForObject(IS_FILM_EXISTS_QUERY, Boolean.class, filmId);
+        Boolean exists = jdbc.queryForObject(IS_FILM_EXISTS_QUERY, Boolean.class, filmId);
+        return Boolean.TRUE.equals(exists);
     }
 }

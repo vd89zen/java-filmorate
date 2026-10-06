@@ -33,7 +33,7 @@ public final class FilmMapper {
         return filmDto;
     }
 
-    public static Film updateFilmFields(Film film, UpdateFilmRequest request) {
+    public static void updateFilmFields(Film film, UpdateFilmRequest request) {
         if (request.hasName()) {
             film.setName(request.getName());
         }
@@ -53,7 +53,5 @@ public final class FilmMapper {
         if (request.hasMpa()) {
             film.setMpa(request.getMpa());
         }
-
-        return film;
     }
 }

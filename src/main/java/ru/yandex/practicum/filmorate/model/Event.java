@@ -3,7 +3,7 @@ package ru.yandex.practicum.filmorate.model;
 import lombok.*;
 
 @Data
-@EqualsAndHashCode(of = {"id"})
+@EqualsAndHashCode(of = {"eventId"})
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder

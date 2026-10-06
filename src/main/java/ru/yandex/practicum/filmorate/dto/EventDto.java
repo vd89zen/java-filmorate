@@ -4,7 +4,7 @@ import lombok.*;
 
 @Builder
 @Data
-@EqualsAndHashCode(of = {"id"})
+@EqualsAndHashCode(of = {"eventId"})
 public class EventDto {
     private Long eventId;
     private Long timestamp;
