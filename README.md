@@ -20,11 +20,15 @@
 
 ## Возможности
 
-- **Каталог фильмов:** создание, редактирование, удаление, просмотр списка и отдельного фильма.
+- **Каталог фильмов:** создание фильма, его редактирование, удаление, просмотр списка и отдельного фильма.
 - **Лайки и популярность:** оценка фильмов пользователями и рейтинг топ-N по количеству лайков.
 - **Друзья:** добавление и удаление, список друзей пользователя, поиск общих друзей.
 - **Общие фильмы:** список фильмов, которые понравились обоим пользователям.
-- **Справочники:** жанры и возрастные рейтинги MPA.
+- **Лента событий:** история действий пользователя и его друзей — добавление в друзья, удаление из друзей,
+  лайки и снятие лайков. Доступна в двух видах: «сырая» (только id сущностей) и обогащённая
+  (с вложенными краткими карточками фильмов и пользователей).
+- **Справочники:** жанры фильмов и возрастные рейтинги MPA.
+- **Пагинация:** постраничная выдача списков пользователей и фильмов с параметрами `from` и `size`.
 
 ## Стек технологий
 
@@ -46,28 +50,37 @@
 | Качество кода | Checkstyle 3.3.1 |
 
 ## Архитектура
+
 REST API с архитектурой рассчитанной на масштабирование.
+
 ```
 controller  →  service  →  dal (storage + row mapper)  →  H2
      ↑              ↑
    DTO         model / mapper
 ```
 
-| Пакет | Назначение                                                                        |
-|---|-----------------------------------------------------------------------------------|
-| `controller` | REST-контроллеры + `GlobalExceptionHandler`                                       |
-| `service` | Бизнес-логика (`FilmService`, `UserService`, `GenreService`, `RatingMpaaService`) |
-| `dal` | Репозитории на `JdbcTemplate`                                                     |
-| `dal.mappers` | `RowMapper`-реализации                                                            |
-| `dto` | DTO запросов/ответов                                                              |
-| `mapper` | Статические мапперы DTO ⇄ домен                                                   |
-| `model` | Доменные модели + интерфейсы `FilmStorage`, `UserStorage`                         |
-| `exception` | `NotFoundException`, `ValidationException`                                        |
+| Пакет | Назначение |
+|---|---|
+| `controller` | REST-контроллеры + `GlobalExceptionHandler` |
+| `service` | Бизнес-логика (`FilmService`, `UserService`, `EventService`, `FeedService`, `GenreService`, `RatingMpaaService`) |
+| `dal` | Репозитории на `JdbcOperations` |
+| `dal.mappers` | `RowMapper`-реализации |
+| `dto` | DTO запросов/ответов, включая краткие `FilmShortDto` / `UserShortDto` для лент |
+| `mapper` | Статические мапперы DTO ⇄ домен |
+| `model` | Доменные модели + enums `EventTypes`, `OperationTypes` |
+| `exception` | `NotFoundException`, `ValidationException` |
+
+### Разделение ответственности
+
+- **`FeedService`** — обогащение «сырых» событий из `EventService` вложенными краткими DTO.
+  Обогащение делается двумя batch-запросами (`findShortByIds`), а не N+1.
+- **Нормализация данных** (`email`, `login` - приведение к нижнему регистру) выполняется в сервисном слое
+  (`UserService.normalizeUser`).
 
 ## Системные требования
 
 | Компонент | Требование |
-|---|-----------------------------|
+|---|---|
 | **JDK** | **21** (или 17 — см. ниже) |
 | Maven | 3.6+ |
 | ОС | любая с поддержкой JDK 17+ |
@@ -77,13 +90,17 @@ controller  →  service  →  dal (storage + row mapper)  →  H2
 
 Проект собирается на JDK 21.
 Если у вас JDK 17, проект тоже соберётся — код совместим с Java 17. Для этого при сборке передайте свойство:
+
 ```bash
 mvn clean package -Djava.version=17
 ```
-либо измените версию в pom
+
+либо измените версию в pom:
+
 ```xml
 <java.version>17</java.version>
 ```
+
 JDK 16 и ниже не подойдут: Spring Boot 3.2.4 требует минимум Java 17.
 
 ## Установка и запуск
@@ -118,14 +135,14 @@ java -jar target/filmorate-0.0.1-SNAPSHOT.jar
 ### 4. Проверить работоспособность
 
 ```bash
-curl http://localhost:8080/films
-curl http://localhost:8080/users
+curl http://localhost:8080/films?from=0&size=10
+curl http://localhost:8080/users?from=0&size=10
 curl http://localhost:8080/genres
 curl http://localhost:8080/mpa
 ```
 
-Ответ в формате JSON — сервис работает. Интерактивная документация — 
-на `http://localhost:8080/swagger-ui.html`.
+Ответ в формате JSON — сервис работает.
+Интерактивная документация — `http://localhost:8080/swagger-ui.html`.
 
 ## Конфигурация
 
@@ -147,6 +164,7 @@ logging:
   level:
     org.zalando.logbook: TRACE           # без этого Logbook не выводит запросы
 ```
+
 Данные сохраняются между перезапусками:
 скрипты инициализации не создают дубликатов и не стирают существующие записи.
 
@@ -162,21 +180,33 @@ logging:
 | `/v3/api-docs` | OpenAPI-спецификация (JSON) |
 | `/v3/api-docs.yaml` | То же в YAML |
 
+### Пагинация
+
+Все «списочные» эндпоинты (`GET /films`, `GET /users`) поддерживают query-параметры:
+
+| Параметр | По умолчанию | Ограничение |
+|---|---|---|
+| `from` | `0` | `>= 0` |
+| `size` | `10` | `1..100` |
+
+Если `from` или `size` выходят за границы — возвращается `400 Bad Request`.
+
 ### Фильмы
 
-| Метод | Путь | Назначение                      | Успех |
-|---|---|---------------------------------|---|
+| Метод | Путь | Назначение | Успех |
+|---|---|---|---|
 | `POST` | `/films` | Создать фильм | `201 Created` + `FilmDto` |
 | `PUT` | `/films` | Обновить фильм | `200 OK` + `FilmDto` |
 | `GET` | `/films/{filmId}` | Получить фильм по id | `200 OK` + `FilmDto` |
-| `DELETE` | `/{filmId}` | Удалить фильм | `204 No Content` |
-| `GET` | `/films` | Список фильмов | `200 OK` + `[FilmDto]` |
+| `DELETE` | `/films/{filmId}` | Удалить фильм | `204 No Content` |
+| `GET` | `/films?from=0&size=10` | Страница фильмов | `200 OK` + `[FilmDto]` |
 | `PUT` | `/films/{filmId}/like/{userId}` | Поставить лайк | `204 No Content` |
 | `DELETE` | `/films/{filmId}/like/{userId}` | Снять лайк | `204 No Content` |
 | `GET` | `/films/popular?count=10` | Топ-N по лайкам | `200 OK` + `[FilmDto]` |
 | `GET` | `/films/common?userId={id}&friendId={id}` | Общие фильмы двух пользователей | `200 OK` + `[FilmDto]` |
 
 Пример создания фильма:
+
 ```bash
 curl -X POST http://localhost:8080/films \
   -H "Content-Type: application/json" \
@@ -189,21 +219,21 @@ curl -X POST http://localhost:8080/films \
         "genres": [ { "id": 1 }, { "id": 2 } ]
       }'
 ```
-Обратите внимание: `mpa` и элементы `genres` передаются как объекты с полем `id`
-— это контракт API.
+
+Обратите внимание: `mpa` и элементы `genres` передаются как объекты с полем `id` — это контракт API.
 
 ### Пользователи
 
-| Метод | Путь                                       | Назначение | Успех |
-|---|--------------------------------------------|---|---|
-| `POST` | `/users`| Создать пользователя | `201 Created` + `UserDto` |
-| `PUT` | `/users`| Обновить пользователя | `200 OK` + `UserDto` |
-| `GET` | `/users/{userId}`| Получить по id | `200 OK` + `UserDto` |
-| `DELETE` | `/{userId}`| Удалить друга | `204 No Content` |
-| `GET` | `/users`| Список пользователей | `200 OK` + `[UserDto]` |
-| `PUT` | `/users/{userId}/friends/{friendId}`| Добавить друга | `204 No Content` |
-| `DELETE` | `/users/{userId}/friends/{friendId}`| Удалить друга | `204 No Content` |
-| `GET` | `/users/{userId}/friends`| Список друзей | `200 OK` + `[UserDto]` |
+| Метод | Путь | Назначение | Успех |
+|---|---|---|---|
+| `POST` | `/users` | Создать пользователя | `201 Created` + `UserDto` |
+| `PUT` | `/users` | Обновить пользователя | `200 OK` + `UserDto` |
+| `GET` | `/users/{userId}` | Получить пользователя | `200 OK` + `UserDto` |
+| `DELETE` | `/users/{userId}` | Удалить пользователя | `204 No Content` |
+| `GET` | `/users?from=0&size=10` | Страница пользователей | `200 OK` + `[UserDto]` |
+| `PUT` | `/users/{userId}/friends/{friendId}` | Добавить друга | `204 No Content` |
+| `DELETE` | `/users/{userId}/friends/{friendId}` | Удалить друга | `204 No Content` |
+| `GET` | `/users/{userId}/friends` | Список друзей | `200 OK` + `[UserDto]` |
 | `GET` | `/users/{userId}/friends/common/{friendId}` | Общие друзья | `200 OK` + `[UserDto]` |
 
 Пример создания пользователя:
@@ -221,6 +251,57 @@ curl -X POST http://localhost:8080/users \
 
 Если поле `name` не указано или пустое — в качестве имени будет использован `login`.
 
+### Лента событий
+
+Пользователь может получить два типа лент:
+
+- **лента пользователя** — его собственные события;
+- **лента друзей**:
+    - пользователя добавили в друзья / удалили из друзей (событие с `entity_id = userId`);
+    - друг поставил / снял лайк фильму.
+
+Каждая лента доступна в двух вариантах: «сырая» (только id) и обогащённая (с краткими карточками).
+
+| Метод | Путь | Назначение | Успех |
+|---|---|---|---|
+| `GET` | `/users/{userId}/feed/user` | События пользователя (сырые) | `200 OK` + `[Event]` |
+| `GET` | `/users/{userId}/feed/friends` | События друзей (сырые) | `200 OK` + `[Event]` |
+| `GET` | `/users/{userId}/feed/user/enriched` | События пользователя (обогащённые) | `200 OK` + `[EnrichedEventDto]` |
+| `GET` | `/users/{userId}/feed/friends/enriched` | События друзей (обогащённые) | `200 OK` + `[EnrichedEventDto]` |
+
+Пример «сырого» события:
+
+```json
+{
+  "eventId": 42,
+  "timestamp": 1700000000000,
+  "userId": 7,
+  "eventType": "LIKE",
+  "operation": "ADD",
+  "entityId": 13
+}
+```
+
+`eventType` — одно из `LIKE`, `REVIEW`, `FRIEND`; `operation` — одно из `ADD`, `REMOVE`, `UPDATE`.
+
+Пример обогащённого события:
+
+```json
+{
+  "eventId": 42,
+  "timestamp": 1700000000000,
+  "userId": 7,
+  "eventType": "LIKE",
+  "operation": "ADD",
+  "film": { "id": 13, "name": "Inception", "releaseDate": "2010-07-16" },
+  "user": null
+}
+```
+
+Поля `film` / `user` заполняются в зависимости от типа события:
+`film` — только для `LIKE`, `user` — только для `FRIEND`. Поле `entityId` в обогащённый ответ не включается
+— его роль выполняет `film.id` / `user.id`.
+
 ### Справочники
 
 | Метод | Путь | Назначение | Успех |
@@ -232,6 +313,17 @@ curl -X POST http://localhost:8080/users \
 
 Справочники предзаполнены при первом запуске: **6 жанров** и **5 рейтингов MPA**.
 Данные сохраняются между перезапусками.
+
+**Как добавить новый жанр**
+
+Справочник жанров предзаполняется в `src/main/resources/data.sql`. 
+Чтобы добавить жанр, допишите строку по образцу:
+
+```sql
+INSERT INTO genres (name)
+SELECT 'Новый жанр' WHERE NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Новый жанр');
+```
+После перезапуска приложения жанр появится в `GET /genres`.
 
 ## Модель данных
 
@@ -246,8 +338,9 @@ curl -X POST http://localhost:8080/users \
 | `film_genres` | `film_id`, `genre_id` (many-to-many) |
 | `film_likes` | `film_id`, `user_id` |
 | `friendship` | `user_id`, `friend_id` |
-
-![Database Schema](https://raw.githubusercontent.com/vd89zen/java-filmorate/main/QuickDBD-filmorate.png)
+| `events` | `id`, `time_stamp`, `user_id`, `event_type_id`, `operation_type_id`, `entity_id` |
+| `event_types` | `id`, `name` (`LIKE`, `REVIEW`, `FRIEND`) |
+| `operation_types` | `id`, `name` (`ADD`, `UPDATE`, `REMOVE`) |
 
 ## Обработка ошибок
 
@@ -269,6 +362,7 @@ curl -X POST http://localhost:8080/users \
 | Исключение | HTTP-статус |
 |---|---|
 | `MethodArgumentNotValidException` | `400 Bad Request` |
+| `ConstraintViolationException` | `400 Bad Request` |
 | `ValidationException` | `400 Bad Request` |
 | `NotFoundException` | `404 Not Found` |
 | любое другое | `500 Internal Server Error` |
@@ -291,6 +385,10 @@ mvn test
 | `FilmGenresDbStorageTest` | Связь фильмов и жанров |
 | `GenreDbStorageTest` | Справочник жанров |
 | `RatingMpaaDbStorageTest` | Справочник рейтингов MPA |
+| `EventDbStorageTest` | События: `addEvent`, лента пользователя, лента друзей |
+| `FeedServiceTest` | Обогащение событий: `FilmShortDto` / `UserShortDto`, `@Nested` по видам лент |
+| `UserControllerPaginationTest` | Пагинацию и валидацию `GET /users` (`from`, `size`, `@Max`) |
+| `FilmControllerPaginationTest` | Пагинацию и валидацию `GET /films` |
 
 ---
 Проект разработан в рамках программы по Java-разработке на платформе Яндекс Практикум.
