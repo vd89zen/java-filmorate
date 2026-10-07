@@ -19,6 +19,7 @@ import java.util.stream.Collectors;
 public class FeedService {
     private final UserService userService;
     private final FilmService filmService;
+    private final ReviewService reviewService;
     private final EventService eventService;
 
     @Transactional(readOnly = true)
@@ -54,21 +55,25 @@ public class FeedService {
             return List.of();
         }
 
-        // Собираем id фильмов, которые упоминаются в LIKE-событиях.
         Set<Long> filmIds = events.stream()
                 .filter(e -> EventTypes.LIKE.name().equals(e.getEventType()))
                 .map(Event::getEntityId)
                 .collect(Collectors.toSet());
 
-        // Собираем id пользователей из FRIEND-событий.
         Set<Long> userIds = events.stream()
                 .filter(e -> EventTypes.FRIEND.name().equals(e.getEventType()))
                 .map(Event::getEntityId)
                 .collect(Collectors.toSet());
 
-        // Два батч-запроса вместо N+1.
+        Set<Long> reviewIds = events.stream()
+                .filter(e -> EventTypes.REVIEW.name().equals(e.getEventType()))
+                .map(Event::getEntityId)
+                .collect(Collectors.toSet());
+
+        // Три батч-запроса вместо N+1.
         Map<Long, FilmShortDto> films = filmService.findShortByIds(filmIds);
         Map<Long, UserShortDto> users = userService.findShortByIds(userIds);
+        Map<Long, ReviewShortDto> reviews = reviewService.findShortByIds(reviewIds);
 
         return events.stream()
                 .map(e -> EnrichedEventDto.builder()
@@ -82,6 +87,9 @@ public class FeedService {
                                 : null)
                         .user(EventTypes.FRIEND.name().equals(e.getEventType())
                                 ? users.get(e.getEntityId())
+                                : null)
+                        .review(EventTypes.REVIEW.name().equals(e.getEventType())
+                                ? reviews.get(e.getEntityId())
                                 : null)
                         .build())
                 .collect(Collectors.toList());

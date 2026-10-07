@@ -17,4 +17,5 @@ public class EnrichedEventDto {
     private String operation;
     private FilmShortDto film;
     private UserShortDto user;
+    private ReviewShortDto review;
 }

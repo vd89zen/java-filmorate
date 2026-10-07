@@ -11,7 +11,9 @@ import ru.yandex.practicum.filmorate.dal.FilmDbStorage;
 import ru.yandex.practicum.filmorate.dal.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.dal.UserDbStorage;
 import ru.yandex.practicum.filmorate.dto.EnrichedEventDto;
+import ru.yandex.practicum.filmorate.dto.NewReviewRequest;
 import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
+import ru.yandex.practicum.filmorate.dto.ReviewDto;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
@@ -33,6 +35,7 @@ class FeedServiceTest {
     private final UserDbStorage userDbStorage;
     private final FilmDbStorage filmDbStorage;
     private final FriendshipDbStorage friendshipDbStorage;
+    private final ReviewService reviewService;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -61,6 +64,8 @@ class FeedServiceTest {
         jdbcTemplate.execute("DELETE FROM friendship");
         jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM film_genres");
+        jdbcTemplate.execute("DELETE FROM review_opinions");
+        jdbcTemplate.execute("DELETE FROM reviews");
         jdbcTemplate.execute("DELETE FROM films");
         jdbcTemplate.execute("DELETE FROM users");
     }
@@ -92,7 +97,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("Пустая лента возвращает пустой список")
-        void emptyFeed_returnsEmptyList() {
+        void emptyFeed_ReturnsEmptyList_Test() {
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
 
             assertThat(feed).isEmpty();
@@ -100,7 +105,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("LIKE-событие обогащается FilmShortDto, user == null")
-        void likeEvent_enrichedWithFilm() {
+        void likeEvent_EnrichedWithFilm_Test() {
             eventDbStorage.addEvent(user1Id, EventTypes.LIKE, OperationTypes.ADD, filmId);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
@@ -118,7 +123,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("FRIEND-событие обогащается UserShortDto, film == null")
-        void friendEvent_enrichedWithUser() {
+        void friendEvent_EnrichedWithUser_Test() {
             eventDbStorage.addEvent(user1Id, EventTypes.FRIEND, OperationTypes.ADD, user2Id);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
@@ -134,7 +139,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("Смешанные события обогащаются каждое правильно")
-        void mixedEvents_eachEnrichedCorrectly() {
+        void mixedEvents_EachEnrichedCorrectly_Test() {
             eventDbStorage.addEvent(user1Id, EventTypes.LIKE, OperationTypes.ADD, filmId);
             eventDbStorage.addEvent(user1Id, EventTypes.FRIEND, OperationTypes.ADD, user2Id);
 
@@ -159,7 +164,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("UserShortDto не раскрывает email / login / birthday")
-        void userShortDto_doesNotExposePrivateFields() {
+        void userShortDto_DoesNotExposePrivateFields_Test() {
             eventDbStorage.addEvent(user1Id, EventTypes.FRIEND, OperationTypes.ADD, user2Id);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
@@ -170,6 +175,32 @@ class FeedServiceTest {
                     .extracting("name")
                     .containsExactlyInAnyOrder("id", "name");
         }
+
+        @Test
+        @DisplayName("REVIEW-событие обогащается ReviewShortDto, film и user == null")
+        void reviewEvent_EnrichedWithReview_Test() {
+            NewReviewRequest request = new NewReviewRequest();
+            request.setUserId(user1Id);
+            request.setFilmId(filmId);
+            request.setContent("bad film");
+            request.setIsPositive(false);
+
+            ReviewDto created = reviewService.create(request);
+
+            List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
+
+            EnrichedEventDto event = feed.stream()
+                    .filter(e -> EventTypes.REVIEW.name().equals(e.getEventType()))
+                    .findFirst().orElseThrow();
+
+            assertThat(event.getOperation()).isEqualTo(OperationTypes.ADD.name());
+            assertThat(event.getReview()).isNotNull();
+            assertThat(event.getReview().getReviewId()).isEqualTo(created.getReviewId());
+            assertThat(event.getReview().getContent()).isEqualTo("bad film");
+            assertThat(event.getReview().getIsPositive()).isFalse();
+            assertThat(event.getFilm()).isNull();
+            assertThat(event.getUser()).isNull();
+        }
     }
 
     @Nested
@@ -178,7 +209,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("Лайк от друга обогащается фильмом")
-        void likeFromFriend_enriched() {
+        void likeFromFriend_Enriched_Test() {
             friendshipDbStorage.addFriend(user1Id, user2Id);
             eventDbStorage.addEvent(user2Id, EventTypes.LIKE, OperationTypes.ADD, filmId);
 
@@ -194,7 +225,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("Лайк от не-друга не попадает в ленту")
-        void likeFromNonFriend_notIncluded() {
+        void likeFromNonFriend_NotIncluded_Test() {
             eventDbStorage.addEvent(user3Id, EventTypes.LIKE, OperationTypes.ADD, filmId);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedFriends(user1Id);
@@ -204,7 +235,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("FRIEND/ADD с entity_id = user1 обогащается UserShortDto")
-        void friendAddedUser_enriched() {
+        void friendAddedUser_Enriched_Test() {
             eventDbStorage.addEvent(user2Id, EventTypes.FRIEND, OperationTypes.ADD, user1Id);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedFriends(user1Id);
@@ -218,7 +249,7 @@ class FeedServiceTest {
 
         @Test
         @DisplayName("Смешанные события: попадают только события друзей")
-        void mixedEvents_onlyFriendEventsIncluded() {
+        void mixedEvents_OnlyFriendEventsIncluded_Test() {
             friendshipDbStorage.addFriend(user1Id, user2Id);
 
             eventDbStorage.addEvent(user2Id, EventTypes.LIKE, OperationTypes.ADD, filmId);
