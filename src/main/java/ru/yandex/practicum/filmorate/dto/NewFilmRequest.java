@@ -13,16 +13,17 @@ import java.util.Set;
 @NoArgsConstructor
 public class NewFilmRequest {
     @NotBlank(message = "Не указано название фильма.")
-    String name;
+    private String name;
     @NotNull(message = "Описание фильма не может быть null.")
     @Size(min = 2, max = 200, message = "Описание должно быть от 2 до 200 символов.")
-    String description;
+    private String description;
     @NotNull(message = "Дата релиза фильма не может быть null.")
-    LocalDate releaseDate;
+    private LocalDate releaseDate;
     @NotNull(message = "Длительность фильма не может быть null.")
     @Positive(message = "Длительность фильма должна быть положительным числом.")
-    Integer duration;
+    private Integer duration;
     @NotNull(message = "Рейтинг фильма не может быть null.")
-    RatingMpaaId mpa;
-    Set<GenreId> genres = new HashSet<>();
+    private RatingMpaaId mpa;
+    private Set<GenreId> genres = new HashSet<>();
+    private Set<DirectorId> directors = new HashSet<>();
 }

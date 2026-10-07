@@ -51,6 +51,7 @@ class FilmGenresDbStorageTest {
     private void cleanUp() {
         jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM film_genres");
+        jdbcTemplate.execute("DELETE FROM film_directors");
         jdbcTemplate.execute("DELETE FROM films");
     }
 
@@ -111,7 +112,6 @@ class FilmGenresDbStorageTest {
         @Test
         @DisplayName("Получение жанров несуществующего фильма: должен вернуть пустой набор")
         void getGenresOfFilm_Should_Return_Empty_Set_For_NonExisting_Film_Test() {
-            setUp();
             // given
             Long nonExistingFilmId = 666L;
             // when
@@ -138,7 +138,6 @@ class FilmGenresDbStorageTest {
         @Test
         @DisplayName("Получение ID жанров несуществующего фильма: должен вернуть пустой набор")
         void getGenreIdsOfFilm_Should_Return_Empty_Set_For_NonExisting_Film_Test() {
-            setUp();
             // given
             Long nonExistingFilmId = 999L;
             // when
@@ -186,7 +185,6 @@ class FilmGenresDbStorageTest {
         @Test
         @DisplayName("Получение жанров для несуществующих ID фильмов: должен вернуть карту без записей для этих ID")
         void getGenresByFilmsIds_Should_Handle_NonExistingIds_Test() {
-            setUp();
             // given
             Set<Long> nonExistingIds = Set.of(222L, 555L);
             // when

@@ -38,6 +38,22 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
         SET name = ?, description = ?, release_date = ?, duration = ?, rating_mpaa_id = ?
         WHERE id = ?
         """;
+    private static final String FIND_FILMS_BY_DIRECTOR_SORTED_BY_YEAR_QUERY = """
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        FROM films f
+        JOIN film_directors fd ON fd.film_id = f.id
+        WHERE fd.director_id = ?
+        ORDER BY f.release_date ASC, f.id ASC
+        """;
+    private static final String FIND_FILMS_BY_DIRECTOR_SORTED_BY_LIKES_QUERY = """
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        FROM films f
+        JOIN film_directors fd ON fd.film_id = f.id
+        LEFT JOIN film_likes fl ON fl.film_id = f.id
+        WHERE fd.director_id = ?
+        GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        ORDER BY COUNT(fl.user_id) DESC, f.id ASC
+        """;
 
     private final NamedParameterJdbcTemplate namedJdbc;
 
@@ -80,6 +96,11 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
         return delete(DELETE_FILM_QUERY, filmId);
     }
 
+    /**
+     * Возвращает фильмы по набору id.
+     * <p>Порядок результата НЕ гарантирован. Если порядок важен,
+     * восстанавливайте его самостоятельно по исходному списку id.
+     */
     public List<Film> findBySeveralIds(List<Long> filmsIds) {
         MapSqlParameterSource param = new MapSqlParameterSource("filmsIds", filmsIds);
         return namedJdbc.query(FIND_FILMS_BY_IDS_QUERY, param, mapper);
@@ -88,5 +109,13 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
     public boolean isFilmExists(Long filmId) {
         Boolean exists = jdbc.queryForObject(IS_FILM_EXISTS_QUERY, Boolean.class, filmId);
         return Boolean.TRUE.equals(exists);
+    }
+
+    public List<Film> findByDirectorSortedByYear(Long directorId) {
+        return findMany(FIND_FILMS_BY_DIRECTOR_SORTED_BY_YEAR_QUERY, directorId);
+    }
+
+    public List<Film> findByDirectorSortedByLikes(Long directorId) {
+        return findMany(FIND_FILMS_BY_DIRECTOR_SORTED_BY_LIKES_QUERY, directorId);
     }
 }

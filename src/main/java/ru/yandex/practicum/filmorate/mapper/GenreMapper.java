@@ -12,15 +12,9 @@ import java.util.stream.Collectors;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class GenreMapper {
 
-    public static List<GenreDto> toDtoSet(List<Genre> genres) {
-        if (genres.isEmpty()) {
-            return List.of();
-        }
-
+    public static List<GenreDto> toDtoList(List<Genre> genres) {
         return genres.stream()
-                .map(genre -> new GenreDto(
-                        genre.getId(),
-                        genre.getName()))
+                .map(GenreMapper::toDto)
                 .collect(Collectors.toUnmodifiableList());
     }
 

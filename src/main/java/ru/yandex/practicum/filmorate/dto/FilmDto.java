@@ -4,21 +4,21 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import java.time.LocalDate;
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 @Builder
 @Data
 @EqualsAndHashCode(of = {"id"})
 public class FilmDto {
-    Long id;
-    String name;
-    String description;
-    LocalDate releaseDate;
-    Integer duration;
-    RatingMpaaDto mpa;
+    private Long id;
+    private String name;
+    private String description;
+    private LocalDate releaseDate;
+    private Integer duration;
+    private RatingMpaaDto mpa;
     @Builder.Default
-    Set<GenreDto> genres = new TreeSet<>(Comparator.comparing(GenreDto::getId));
-    Integer likesCount;
+    private Set<GenreDto> genres = new TreeSet<>(Comparator.comparing(GenreDto::getId));
+    private Integer likesCount;
+    @Builder.Default
+    private Set<DirectorDto> directors = new TreeSet<>(Comparator.comparing(DirectorDto::getId));
 }

@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Genre;
 import java.sql.PreparedStatement;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -39,6 +40,13 @@ public class FilmGenresDbStorage {
     }
 
     public void insert(Long filmId, Set<Long> genresIds) {
+        if (genresIds == null) {
+            throw new IllegalArgumentException("genresIds must not be null");
+        }
+        if (genresIds.isEmpty()) {
+            return;
+        }
+
         jdbc.batchUpdate(
                 INSERT_QUERY,
                 genresIds,
@@ -63,12 +71,11 @@ public class FilmGenresDbStorage {
     }
 
     public Set<Long> getGenreIdsOfFilm(Long filmId) {
-        return jdbc.query(
-                        GET_GENRES_IDS_OF_FILM_QUERY,
-                        (PreparedStatement ps) -> ps.setLong(1, filmId),
-                        (rs, rowNum) -> rs.getLong("genre_id")
-                ).stream()
-                .collect(Collectors.toSet());
+        return new HashSet<>(jdbc.query(
+                GET_GENRES_IDS_OF_FILM_QUERY,
+                (PreparedStatement ps) -> ps.setLong(1, filmId),
+                (rs, rowNum) -> rs.getLong("genre_id")
+        ));
     }
 
     public Map<Long, List<Genre>> getGenresByFilmsIds(Set<Long> filmsIds) {
