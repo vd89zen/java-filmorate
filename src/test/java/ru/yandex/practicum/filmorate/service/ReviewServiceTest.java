@@ -9,10 +9,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.dal.FilmDbStorage;
 import ru.yandex.practicum.filmorate.dal.ReviewDbStorage;
 import ru.yandex.practicum.filmorate.dal.UserDbStorage;
-import ru.yandex.practicum.filmorate.dto.NewReviewRequest;
-import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
-import ru.yandex.practicum.filmorate.dto.ReviewDto;
-import ru.yandex.practicum.filmorate.dto.UpdateReviewRequest;
+import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.model.Film;
@@ -376,6 +373,20 @@ class ReviewServiceTest {
             Map<Long, ?> map = reviewService.findShortByIds(Set.of(r1.getReviewId(), r2.getReviewId()));
 
             assertThat(map).hasSize(2).containsKeys(r1.getReviewId(), r2.getReviewId());
+        }
+
+        @Test
+        @DisplayName("findShortByIds: короткое DTO содержит информацию о фильме")
+        void findShortByIds_Should_IncludeFilm_Test() {
+            ReviewDto r1 = reviewService.create(newRequest(user1Id, filmId, "r1", true));
+
+            Map<Long, ReviewShortDto> map = reviewService.findShortByIds(Set.of(r1.getReviewId()));
+
+            assertThat(map).hasSize(1);
+            ReviewShortDto dto = map.get(r1.getReviewId());
+            assertThat(dto.getFilm()).isNotNull();
+            assertThat(dto.getFilm().getId()).isEqualTo(filmId);
+            assertThat(dto.getFilm().getName()).isEqualTo("Film1");
         }
     }
 }

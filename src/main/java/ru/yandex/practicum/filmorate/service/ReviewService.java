@@ -5,10 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dal.ReviewDbStorage;
-import ru.yandex.practicum.filmorate.dto.NewReviewRequest;
-import ru.yandex.practicum.filmorate.dto.ReviewDto;
-import ru.yandex.practicum.filmorate.dto.ReviewShortDto;
-import ru.yandex.practicum.filmorate.dto.UpdateReviewRequest;
+import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
 import ru.yandex.practicum.filmorate.exception.ValidationException;
 import ru.yandex.practicum.filmorate.mapper.ReviewMapper;
@@ -124,13 +121,26 @@ public class ReviewService {
         if (reviewIds == null || reviewIds.isEmpty()) {
             return Map.of();
         }
-        return reviewStorage.findBySeveralIds(new ArrayList<>(reviewIds)).stream()
+
+        List<Review> reviews = reviewStorage.findBySeveralIds(new ArrayList<>(reviewIds));
+        if (reviews.isEmpty()) {
+            return Map.of();
+        }
+
+        // Один batch-запрос за фильмами
+        Set<Long> filmIds = reviews.stream()
+                .map(Review::getFilmId)
+                .collect(Collectors.toSet());
+        Map<Long, FilmShortDto> films = filmService.findShortByIds(filmIds);
+
+        return reviews.stream()
                 .collect(Collectors.toMap(
                         Review::getReviewId,
                         review -> ReviewShortDto.builder()
                                 .reviewId(review.getReviewId())
                                 .content(review.getContent())
                                 .isPositive(review.getIsPositive())
+                                .film(films.get(review.getFilmId()))
                                 .build()));
     }
 
