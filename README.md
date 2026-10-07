@@ -1,9 +1,9 @@
 # Filmorate
 
 Бэкенд-сервис социальной сети для киноманов. Помогает решить проблему выбора фильма для просмотра:
-пользователи оставляют лайки фильмам, формируют круг друзей и получают персональную картину популярности
-— топ фильмов строится на основе реальных оценок, а также можно выбрать список общих фильмов (лайкнули оба)
-для двух пользователей.
+пользователи оставляют лайки фильмам, формируют круг друзей, оставляют отзывы на фильмы и получают
+персональную картину популярности — топ фильмов строится на основе реальных оценок, доступны общие
+фильмы (лайкнули оба), рейтинг полезности отзывов, лента событий пользователя и его друзей.
 
 ## Содержание
 
@@ -24,11 +24,14 @@
 - **Лайки и популярность:** оценка фильмов пользователями и рейтинг топ-N по количеству лайков.
 - **Друзья:** добавление и удаление, список друзей пользователя, поиск общих друзей.
 - **Общие фильмы:** список фильмов, которые понравились обоим пользователям.
+- **Отзывы:** пользователи оставляют отзывы на фильмы с оценкой (положительный/негативный),
+  ставят лайки/дизлайки другим отзывам; рейтинг полезности формируется динамически,
+  лента отзывов сортируется по нему. Один пользователь — один отзыв на фильм.
 - **Лента событий:** история действий пользователя и его друзей — добавление в друзья, удаление из друзей,
-  лайки и снятие лайков. Доступна в двух видах: «сырая» (только id сущностей) и обогащённая
-  (с вложенными краткими карточками фильмов и пользователей).
+  лайки и снятие лайков фильмов, действия с отзывами. Доступна в двух видах: «сырая» (только id сущностей)
+  и обогащённая (с вложенными краткими карточками).
 - **Справочники:** жанры фильмов и возрастные рейтинги MPA.
-- **Пагинация:** постраничная выдача списков пользователей и фильмов с параметрами `from` и `size`.
+- **Пагинация:** постраничная выдача списков пользователей и фильмов с параметрами.
 
 ## Стек технологий
 
@@ -51,7 +54,7 @@
 
 ## Архитектура
 
-REST API с архитектурой рассчитанной на масштабирование.
+REST API с архитектурой, рассчитанной на масштабирование.
 
 ```
 controller  →  service  →  dal (storage + row mapper)  →  H2
@@ -62,10 +65,10 @@ controller  →  service  →  dal (storage + row mapper)  →  H2
 | Пакет | Назначение |
 |---|---|
 | `controller` | REST-контроллеры + `GlobalExceptionHandler` |
-| `service` | Бизнес-логика (`FilmService`, `UserService`, `EventService`, `FeedService`, `GenreService`, `RatingMpaaService`) |
+| `service` | Бизнес-логика (`FilmService`, `UserService`, `EventService`, `FeedService`, `ReviewService`, `GenreService`, `RatingMpaaService`) |
 | `dal` | Репозитории на `JdbcOperations` |
 | `dal.mappers` | `RowMapper`-реализации |
-| `dto` | DTO запросов/ответов, включая краткие `FilmShortDto` / `UserShortDto` для лент |
+| `dto` | DTO запросов/ответов, включая краткие `FilmShortDto` / `UserShortDto` / `ReviewShortDto` для лент |
 | `mapper` | Статические мапперы DTO ⇄ домен |
 | `model` | Доменные модели + enums `EventTypes`, `OperationTypes` |
 | `exception` | `NotFoundException`, `ValidationException` |
@@ -73,9 +76,13 @@ controller  →  service  →  dal (storage + row mapper)  →  H2
 ### Разделение ответственности
 
 - **`FeedService`** — обогащение «сырых» событий из `EventService` вложенными краткими DTO.
-  Обогащение делается двумя batch-запросами (`findShortByIds`), а не N+1.
-- **Нормализация данных** (`email`, `login` - приведение к нижнему регистру) выполняется в сервисном слое
-  (`UserService.normalizeUser`).
+  Обогащение делается batch-запросами.
+- **Нормализация данных** (`email`, `login` — приведение к нижнему регистру) выполняется
+  в сервисном слое (`UserService.normalizeUser`).
+- **Рейтинг полезности отзыва** (`useful`) хранится денормализованно в таблице `reviews`
+  и меняется атомарно (`UPDATE reviews SET useful = useful ± 1`) в одной транзакции
+  с записью мнения в `review_opinions`. Лайки/дизлайки **отзывов** событий в ленте не создают —
+  событие пишется только при `REVIEW/ADD|UPDATE|REMOVE`.
 
 ## Системные требования
 
@@ -139,6 +146,7 @@ curl http://localhost:8080/films?from=0&size=10
 curl http://localhost:8080/users?from=0&size=10
 curl http://localhost:8080/genres
 curl http://localhost:8080/mpa
+curl http://localhost:8080/reviews?count=10
 ```
 
 Ответ в формате JSON — сервис работает.
@@ -251,16 +259,75 @@ curl -X POST http://localhost:8080/users \
 
 Если поле `name` не указано или пустое — в качестве имени будет использован `login`.
 
+### Отзывы
+
+| Метод | Путь | Назначение | Успех |
+|---|---|---|---|
+| `POST` | `/reviews` | Создать отзыв | `201 Created` + `ReviewDto` |
+| `PUT` | `/reviews` | Обновить отзыв | `200 OK` + `ReviewDto` |
+| `DELETE` | `/reviews/{id}` | Удалить отзыв | `204 No Content` |
+| `GET` | `/reviews/{id}` | Получить отзыв | `200 OK` + `ReviewDto` |
+| `GET` | `/reviews?filmId=&count=10` | Отзывы по фильму (или все) | `200 OK` + `[ReviewDto]` |
+| `PUT` | `/reviews/{id}/like/{userId}` | Поставить лайк | `204 No Content` |
+| `PUT` | `/reviews/{id}/dislike/{userId}` | Поставить дизлайк | `204 No Content` |
+| `DELETE` | `/reviews/{id}/like/{userId}` | Снять лайк | `204 No Content` |
+| `DELETE` | `/reviews/{id}/dislike/{userId}` | Снять дизлайк | `204 No Content` |
+
+Один пользователь может оставить **только один отзыв** на фильм (`UNIQUE (user_id, film_id)`).
+Повторная попытка — `400 Bad Request`.
+
+`useful` начинается с 0: лайк увеличивает его на 1, дизлайк уменьшает на 1.
+Сортировка — по убыванию `useful`, при равенстве — по возрастанию `reviewId`.
+Параметр `count` ограничен значением `100`.
+
+Создание отзыва:
+
+```bash
+curl -X POST http://localhost:8080/reviews \
+  -H "Content-Type: application/json" \
+  -d '{
+        "content": "This film is sooo baad.",
+        "isPositive": false,
+        "userId": 1,
+        "filmId": 1
+      }'
+```
+
+Ответ:
+
+```json
+{
+  "reviewId": 1,
+  "content": "This film is sooo baad.",
+  "isPositive": false,
+  "userId": 1,
+  "filmId": 1,
+  "useful": 0
+}
+```
+
+`PUT /reviews` — частичное обновление: можно передать только `content`, только `isPositive`
+или оба поля. Пустой запрос (без обоих полей) → `400 Bad Request`.
+
 ### Лента событий
 
 Пользователь может получить два типа лент:
 
 - **лента пользователя** — его собственные события;
-- **лента друзей**:
+- **лента друзей** — что делают его друзья:
     - пользователя добавили в друзья / удалили из друзей (событие с `entity_id = userId`);
-    - друг поставил / снял лайк фильму.
+    - друг поставил / снял лайк фильму;
+    - друг создал / обновил / удалил отзыв.
 
 Каждая лента доступна в двух вариантах: «сырая» (только id) и обогащённая (с краткими карточками).
+
+В ленту попадают события:
+
+- `LIKE/ADD` и `LIKE/REMOVE` — лайки **фильмов** (в ленте друзей — только от друзей);
+- `FRIEND/ADD` и `FRIEND/REMOVE` — добавление в друзья / удаление из друзей;
+- `REVIEW/ADD`, `REVIEW/UPDATE`, `REVIEW/REMOVE` — действия с отзывами (в ленте друзей — только от друзей).
+
+Лайки и дизлайки **отзывов** событий не создают — меняется только поле `useful` у отзыва.
 
 | Метод | Путь | Назначение | Успех |
 |---|---|---|---|
@@ -284,7 +351,7 @@ curl -X POST http://localhost:8080/users \
 
 `eventType` — одно из `LIKE`, `REVIEW`, `FRIEND`; `operation` — одно из `ADD`, `REMOVE`, `UPDATE`.
 
-Пример обогащённого события:
+Пример обогащённого события `LIKE`:
 
 ```json
 {
@@ -294,13 +361,38 @@ curl -X POST http://localhost:8080/users \
   "eventType": "LIKE",
   "operation": "ADD",
   "film": { "id": 13, "name": "Inception", "releaseDate": "2010-07-16" },
-  "user": null
+  "user": null,
+  "review": null
 }
 ```
 
-Поля `film` / `user` заполняются в зависимости от типа события:
-`film` — только для `LIKE`, `user` — только для `FRIEND`. Поле `entityId` в обогащённый ответ не включается
-— его роль выполняет `film.id` / `user.id`.
+Пример обогащённого события `REVIEW`:
+
+```json
+{
+  "eventId": 51,
+  "timestamp": 1700000000000,
+  "userId": 7,
+  "eventType": "REVIEW",
+  "operation": "ADD",
+  "film": null,
+  "user": null,
+  "review": {
+    "reviewId": 13,
+    "content": "This film is sooo baad.",
+    "isPositive": false,
+    "film": { "id": 13, "name": "Inception", "releaseDate": "2010-07-16" }
+  }
+}
+```
+
+Поля `film` / `user` / `review` заполняются в зависимости от типа события:
+`film` — для `LIKE`, `user` — для `FRIEND`, `review` — для `REVIEW`.
+Поле `entityId` в обогащённый ответ не включается — его роль выполняет
+`film.id` / `user.id` / `review.reviewId`.
+
+Для `REVIEW/REMOVE` поле `review` будет `null`: сам отзыв уже удалён, в событии остаётся только
+факт удаления.
 
 ### Справочники
 
@@ -316,13 +408,14 @@ curl -X POST http://localhost:8080/users \
 
 **Как добавить новый жанр**
 
-Справочник жанров предзаполняется в `src/main/resources/data.sql`. 
+Справочник жанров предзаполняется в `src/main/resources/data.sql`.
 Чтобы добавить жанр, допишите строку по образцу:
 
 ```sql
 INSERT INTO genres (name)
 SELECT 'Новый жанр' WHERE NOT EXISTS (SELECT 1 FROM genres WHERE name = 'Новый жанр');
 ```
+
 После перезапуска приложения жанр появится в `GET /genres`.
 
 ## Модель данных
@@ -338,6 +431,8 @@ SELECT 'Новый жанр' WHERE NOT EXISTS (SELECT 1 FROM genres WHERE name =
 | `film_genres` | `film_id`, `genre_id` (many-to-many) |
 | `film_likes` | `film_id`, `user_id` |
 | `friendship` | `user_id`, `friend_id` |
+| `reviews` | `id`, `content`, `is_positive`, `user_id`, `film_id`, `useful`, `UNIQUE (user_id, film_id)` |
+| `review_opinions` | `review_id`, `user_id`, `is_useful` (PK: `review_id, user_id`) |
 | `events` | `id`, `time_stamp`, `user_id`, `event_type_id`, `operation_type_id`, `entity_id` |
 | `event_types` | `id`, `name` (`LIKE`, `REVIEW`, `FRIEND`) |
 | `operation_types` | `id`, `name` (`ADD`, `UPDATE`, `REMOVE`) |
@@ -386,7 +481,10 @@ mvn test
 | `GenreDbStorageTest` | Справочник жанров |
 | `RatingMpaaDbStorageTest` | Справочник рейтингов MPA |
 | `EventDbStorageTest` | События: `addEvent`, лента пользователя, лента друзей |
-| `FeedServiceTest` | Обогащение событий: `FilmShortDto` / `UserShortDto`, `@Nested` по видам лент |
+| `FeedServiceTest` | Обогащение событий: `FilmShortDto` / `UserShortDto` / `ReviewShortDto`, `@Nested` по видам лент |
+| `ReviewDbStorageTest` | Отзывы: CRUD, `useful`, лайки/дизлайки, проверки существования |
+| `ReviewServiceTest` | Отзывы: создание/обновление/удаление, события, частичный апдейт |
+| `ReviewControllerTest` | Отзывы: REST-эндпоинты, валидация, `@Max` на `count` |
 | `UserControllerPaginationTest` | Пагинацию и валидацию `GET /users` (`from`, `size`, `@Max`) |
 | `FilmControllerPaginationTest` | Пагинацию и валидацию `GET /films` |
 
