@@ -200,6 +200,8 @@ class FeedServiceTest {
             assertThat(event.getReview().getIsPositive()).isFalse();
             assertThat(event.getFilm()).isNull();
             assertThat(event.getUser()).isNull();
+            assertThat(event.getReview().getFilm()).isNotNull();
+            assertThat(event.getReview().getFilm().getId()).isEqualTo(filmId);
         }
     }
 

@@ -13,4 +13,5 @@ public class ReviewShortDto {
     private Long reviewId;
     private String content;
     private Boolean isPositive;
+    private FilmShortDto film;
 }

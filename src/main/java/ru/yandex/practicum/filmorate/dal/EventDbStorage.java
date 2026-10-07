@@ -42,30 +42,42 @@ public class EventDbStorage {
 
     public List<Event> getFeedFriends(Long userId) {
         final String GET_USER_FRIENDS_FEED_QUERY = """
-            WITH user_friends AS (
-                SELECT friend_id FROM friendship WHERE user_id = ?
-            )
-            SELECT e.id, e.time_stamp, e.user_id, e.entity_id,
-                   et.name AS event_type, ot.name AS operation_type
-            FROM events AS e
-            LEFT OUTER JOIN event_types AS et ON et.id = e.event_type_id
-            LEFT OUTER JOIN operation_types AS ot ON ot.id = e.operation_type_id
-            WHERE
-                -- 1. Пользователя добавили в друзья
-                (e.event_type_id = 3 AND e.operation_type_id = 1 AND e.entity_id = ?)
-                OR
-                -- 2. Пользователя удалили из друзей
-                (e.event_type_id = 3 AND e.operation_type_id = 3 AND e.entity_id = ?)
-                OR
-                -- 3. Друг поставил лайк
-                (e.event_type_id = 1 AND e.operation_type_id = 1
-                 AND e.user_id IN (SELECT friend_id FROM user_friends))
-                OR
-                -- 4. Друг убрал лайк
-                (e.event_type_id = 1 AND e.operation_type_id = 3
-                 AND e.user_id IN (SELECT friend_id FROM user_friends))
-            ORDER BY e.id DESC
-            """;
+        WITH user_friends AS (
+            SELECT friend_id FROM friendship WHERE user_id = ?
+        )
+        SELECT e.id, e.time_stamp, e.user_id, e.entity_id,
+               et.name AS event_type, ot.name AS operation_type
+        FROM events AS e
+        LEFT OUTER JOIN event_types AS et ON et.id = e.event_type_id
+        LEFT OUTER JOIN operation_types AS ot ON ot.id = e.operation_type_id
+        WHERE
+            -- 1. Пользователя добавили в друзья
+            (e.event_type_id = 3 AND e.operation_type_id = 1 AND e.entity_id = ?)
+            OR
+            -- 2. Пользователя удалили из друзей
+            (e.event_type_id = 3 AND e.operation_type_id = 3 AND e.entity_id = ?)
+            OR
+            -- 3. Друг поставил лайк
+            (e.event_type_id = 1 AND e.operation_type_id = 1
+             AND e.user_id IN (SELECT friend_id FROM user_friends))
+            OR
+            -- 4. Друг убрал лайк
+            (e.event_type_id = 1 AND e.operation_type_id = 3
+             AND e.user_id IN (SELECT friend_id FROM user_friends))
+            OR
+            -- 5. Друг создал отзыв
+            (e.event_type_id = 2 AND e.operation_type_id = 1
+             AND e.user_id IN (SELECT friend_id FROM user_friends))
+            OR
+            -- 6. Друг обновил отзыв
+            (e.event_type_id = 2 AND e.operation_type_id = 2
+             AND e.user_id IN (SELECT friend_id FROM user_friends))
+            OR
+            -- 7. Друг удалил отзыв
+            (e.event_type_id = 2 AND e.operation_type_id = 3
+             AND e.user_id IN (SELECT friend_id FROM user_friends))
+        ORDER BY e.id DESC
+        """;
 
         return jdbc.query(GET_USER_FRIENDS_FEED_QUERY, mapper, userId, userId, userId);
     }
