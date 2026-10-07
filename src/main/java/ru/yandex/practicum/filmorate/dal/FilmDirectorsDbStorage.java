@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import ru.yandex.practicum.filmorate.model.Director;
 
 import java.sql.PreparedStatement;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -72,12 +73,11 @@ public class FilmDirectorsDbStorage {
     }
 
     public Set<Long> getDirectorIdsOfFilm(Long filmId) {
-        return jdbc.query(
-                        GET_DIRECTORS_IDS_OF_FILM_QUERY,
-                        (PreparedStatement ps) -> ps.setLong(1, filmId),
-                        (rs, rowNum) -> rs.getLong("director_id"))
-                .stream()
-                .collect(Collectors.toSet());
+        return new HashSet<>(jdbc.query(
+                GET_DIRECTORS_IDS_OF_FILM_QUERY,
+                (PreparedStatement ps) -> ps.setLong(1, filmId),
+                (rs, rowNum) -> rs.getLong("director_id")
+        ));
     }
 
     public Map<Long, List<Director>> getDirectorsByFilmsIds(Set<Long> filmIds) {
