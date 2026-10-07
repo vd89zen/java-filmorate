@@ -1,10 +1,7 @@
 package ru.yandex.practicum.filmorate.controller;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
-import jakarta.validation.constraints.PositiveOrZero;
+import jakarta.validation.constraints.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -84,5 +81,14 @@ public class FilmController {
                                                         @RequestParam @NotNull @Positive Long friendId) {
         return ResponseEntity
                 .ok(filmService.getCommonFilms(userId, friendId));
+    }
+
+    @GetMapping("/director/{directorId}")
+    public ResponseEntity<List<FilmDto>> getFilmsByDirector(
+            @PathVariable @NotNull @Positive Long directorId,
+            @RequestParam(defaultValue = "year")
+            @Pattern(regexp = "year|likes", message = "Допустимые значения: year, likes.") String sortBy) {
+        return ResponseEntity
+                .ok(filmService.getFilmsByDirector(directorId, sortBy));
     }
 }

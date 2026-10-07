@@ -13,18 +13,18 @@ import java.util.Set;
 public class UpdateFilmRequest {
     @NotNull(message = "При обновлении ID фильма не может быть null.")
     @Positive(message = "ID фильма не может быть меньше 1.")
-    Long id;
+    private Long id;
     @Pattern(regexp = ".*\\S+.*",
             message = "(Если поле не null: название фильма должно содержать хотя бы один непробельный символ.")
-    String name;
+    private String name;
     @Size(min = 2, max = 200, message = "Если поле не null: описание должно быть от 2 до 200 символов.")
-    String description;
-    LocalDate releaseDate;
+    private String description;
+    private LocalDate releaseDate;
     @Positive(message = "Если поле не null: длительность фильма должна быть положительным числом.")
-    Integer duration;
-    RatingMpaaId mpa;
-    @Size(min = 1, message = "Если поле не null: должен быть указан хотя бы один жанр.")
-    Set<GenreId> genres;
+    private Integer duration;
+    private RatingMpaaId mpa;
+    private Set<GenreId> genres;
+    private Set<DirectorId> directors;
 
     public boolean hasName() {
         return name != null;
@@ -48,5 +48,9 @@ public class UpdateFilmRequest {
 
     public boolean hasGenres() {
         return genres != null;
+    }
+
+    public boolean hasDirectors() {
+        return directors != null;
     }
 }

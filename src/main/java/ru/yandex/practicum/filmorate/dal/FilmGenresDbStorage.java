@@ -39,6 +39,13 @@ public class FilmGenresDbStorage {
     }
 
     public void insert(Long filmId, Set<Long> genresIds) {
+        if (genresIds == null) {
+            throw new IllegalArgumentException("genresIds must not be null");
+        }
+        if (genresIds.isEmpty()) {
+            return;
+        }
+
         jdbc.batchUpdate(
                 INSERT_QUERY,
                 genresIds,
