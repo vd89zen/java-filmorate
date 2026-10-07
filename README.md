@@ -30,6 +30,8 @@
 - **Лента событий:** история действий пользователя и его друзей — добавление в друзья, удаление из друзей,
   лайки и снятие лайков фильмов, действия с отзывами. Доступна в двух видах: «сырая» (только id сущностей)
   и обогащённая (с вложенными краткими карточками).
+- **Режиссёры:** справочник режиссёров (CRUD), связь «многие-ко-многим» с фильмами;
+  выборка фильмов режиссёра с сортировкой по году выпуска или количеству лайков.
 - **Справочники:** жанры фильмов и возрастные рейтинги MPA.
 - **Пагинация:** постраничная выдача списков пользователей и фильмов с параметрами.
 
@@ -65,7 +67,7 @@ controller  →  service  →  dal (storage + row mapper)  →  H2
 | Пакет | Назначение |
 |---|---|
 | `controller` | REST-контроллеры + `GlobalExceptionHandler` |
-| `service` | Бизнес-логика (`FilmService`, `UserService`, `EventService`, `FeedService`, `ReviewService`, `GenreService`, `RatingMpaaService`) |
+| `service` | Бизнес-логика (`FilmService`, `UserService`, `EventService`, `FeedService`, `ReviewService`, `DirectorService`, `GenreService`, `RatingMpaaService`) |
 | `dal` | Репозитории на `JdbcOperations` |
 | `dal.mappers` | `RowMapper`-реализации |
 | `dto` | DTO запросов/ответов, включая краткие `FilmShortDto` / `UserShortDto` / `ReviewShortDto` для лент |
@@ -83,6 +85,9 @@ controller  →  service  →  dal (storage + row mapper)  →  H2
   и меняется атомарно (`UPDATE reviews SET useful = useful ± 1`) в одной транзакции
   с записью мнения в `review_opinions`. Лайки/дизлайки **отзывов** событий в ленте не создают —
   событие пишется только при `REVIEW/ADD|UPDATE|REMOVE`.
+- **Порядок в выборках, где он не задаётся SQL,** восстанавливается явно в сервисе
+  (например, `getTopPopularFilms` сортирует фильмы по `LinkedHashMap` из `filmLikesDbStorage`,
+  потому что `findBySeveralIds` возвращает фильмы в произвольном порядке СУБД).
 
 ## Системные требования
 
@@ -146,6 +151,7 @@ curl http://localhost:8080/films?from=0&size=10
 curl http://localhost:8080/users?from=0&size=10
 curl http://localhost:8080/genres
 curl http://localhost:8080/mpa
+curl http://localhost:8080/directors
 curl http://localhost:8080/reviews?count=10
 ```
 
@@ -212,6 +218,7 @@ logging:
 | `DELETE` | `/films/{filmId}/like/{userId}` | Снять лайк | `204 No Content` |
 | `GET` | `/films/popular?count=10` | Топ-N по лайкам | `200 OK` + `[FilmDto]` |
 | `GET` | `/films/common?userId={id}&friendId={id}` | Общие фильмы двух пользователей | `200 OK` + `[FilmDto]` |
+| `GET` | `/films/director/{directorId}?sortBy=year|likes` | Фильмы режиссёра, сортировка по году или лайкам | `200 OK` + `[FilmDto]` |
 
 Пример создания фильма:
 
@@ -224,11 +231,31 @@ curl -X POST http://localhost:8080/films \
         "releaseDate": "2010-07-16",
         "duration": 148,
         "mpa": { "id": 1 },
-        "genres": [ { "id": 1 }, { "id": 2 } ]
+        "genres": [ { "id": 1 }, { "id": 2 } ],
+        "directors": [ { "id": 1 } ]
       }'
 ```
 
-Обратите внимание: `mpa` и элементы `genres` передаются как объекты с полем `id` — это контракт API.
+Обратите внимание: `mpa`, элементы `genres` и `directors` передаются как объекты с полем `id` — это контракт API.
+
+### Фильмы режиссёра
+
+```http
+GET /films/director/{directorId}?sortBy=year|likes
+```
+
+| Параметр | По умолчанию | Допустимые значения |
+|---|---|---|
+| `sortBy` | `year` | `year`, `likes` |
+
+- `year` — сортировка по возрастанию даты релиза;
+- `likes` — сортировка по убыванию количества лайков.
+
+Пример:
+
+```bash
+curl "http://localhost:8080/films/director/1?sortBy=likes"
+```
 
 ### Пользователи
 
@@ -308,6 +335,34 @@ curl -X POST http://localhost:8080/reviews \
 
 `PUT /reviews` — частичное обновление: можно передать только `content`, только `isPositive`
 или оба поля. Пустой запрос (без обоих полей) → `400 Bad Request`.
+
+### Режиссёры
+
+| Метод | Путь | Назначение | Успех |
+|---|---|---|---|
+| `POST` | `/directors` | Создать режиссёра | `201 Created` + `DirectorDto` |
+| `PUT` | `/directors` | Обновить режиссёра | `200 OK` + `DirectorDto` |
+| `DELETE` | `/directors/{id}` | Удалить режиссёра | `204 No Content` |
+| `GET` | `/directors/{id}` | Получить режиссёра | `200 OK` + `DirectorDto` |
+| `GET` | `/directors` | Все режиссёры | `200 OK` + `[DirectorDto]` |
+
+Имя режиссёра уникально (`UNIQUE (name)`): повторная попытка создания → `400 Bad Request`.
+
+Создание режиссёра:
+
+```bash
+curl -X POST http://localhost:8080/directors \
+  -H "Content-Type: application/json" \
+  -d '{ "name": "Christopher Nolan" }'
+```
+
+Обновление:
+
+```bash
+curl -X PUT http://localhost:8080/directors \
+  -H "Content-Type: application/json" \
+  -d '{ "id": 1, "name": "Новое имя" }'
+```
 
 ### Лента событий
 
@@ -431,6 +486,8 @@ SELECT 'Новый жанр' WHERE NOT EXISTS (SELECT 1 FROM genres WHERE name =
 | `film_genres` | `film_id`, `genre_id` (many-to-many) |
 | `film_likes` | `film_id`, `user_id` |
 | `friendship` | `user_id`, `friend_id` |
+| `directors` | `id`, `name` (`UNIQUE`) |
+| `film_directors` | `film_id`, `director_id` (many-to-many) |
 | `reviews` | `id`, `content`, `is_positive`, `user_id`, `film_id`, `useful`, `UNIQUE (user_id, film_id)` |
 | `review_opinions` | `review_id`, `user_id`, `is_useful` (PK: `review_id, user_id`) |
 | `events` | `id`, `time_stamp`, `user_id`, `event_type_id`, `operation_type_id`, `entity_id` |
@@ -468,25 +525,15 @@ SELECT 'Новый жанр' WHERE NOT EXISTS (SELECT 1 FROM genres WHERE name =
 mvn test
 ```
 
-Тесты интеграционные: поднимают Spring-контекст и работают с H2. Mock-фреймворки не используются.
+Тесты интеграционные: поднимают Spring-контекст и работают с настоящей H2 (in-memory),
+mock-фреймворки не используются. Покрыты все слои:
 
-| Тест-класс | Что проверяет |
-|---|---|
-| `FilmorateApplicationTests` | Загрузку Spring-контекста |
-| `FilmDbStorageTest` | CRUD и выборки фильмов |
-| `UserDbStorageTest` | CRUD и выборки пользователей |
-| `FriendshipDbStorageTest` | Дружбу: добавление, удаление, общие друзья, счётчики |
-| `FilmLikesDbStorageTest` | Лайки: добавление, удаление, топ-N, счётчики |
-| `FilmGenresDbStorageTest` | Связь фильмов и жанров |
-| `GenreDbStorageTest` | Справочник жанров |
-| `RatingMpaaDbStorageTest` | Справочник рейтингов MPA |
-| `EventDbStorageTest` | События: `addEvent`, лента пользователя, лента друзей |
-| `FeedServiceTest` | Обогащение событий: `FilmShortDto` / `UserShortDto` / `ReviewShortDto`, `@Nested` по видам лент |
-| `ReviewDbStorageTest` | Отзывы: CRUD, `useful`, лайки/дизлайки, проверки существования |
-| `ReviewServiceTest` | Отзывы: создание/обновление/удаление, события, частичный апдейт |
-| `ReviewControllerTest` | Отзывы: REST-эндпоинты, валидация, `@Max` на `count` |
-| `UserControllerPaginationTest` | Пагинацию и валидацию `GET /users` (`from`, `size`, `@Max`) |
-| `FilmControllerPaginationTest` | Пагинацию и валидацию `GET /films` |
+- **Хранилища** (`dal`) — CRUD, выборки, связи, краевые случаи (пустые коллекции, `null`, дубли).
+- **Сервисы** — бизнес-логика, валидация, транзакционность, события.
+- **Контроллеры** — REST-эндпоинты через `MockMvc`, коды ответов, валидация query-параметров.
+
+Тесты используют `@Nested` для группировки сценариев и очищают БД между запусками,
+поэтому их можно запускать в любом порядке.
 
 ---
 Проект разработан в рамках программы по Java-разработке на платформе Яндекс Практикум.
