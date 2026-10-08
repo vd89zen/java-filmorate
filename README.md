@@ -219,9 +219,9 @@ logging:
 | `GET` | `/films/popular?count=10&genreId=&year=` | Топ-N по лайкам с опциональной фильтрацией | `200 OK` + `[FilmDto]` |
 | `GET` | `/films/common?userId={id}&friendId={id}`          | Общие фильмы двух пользователей | `200 OK` + `[FilmDto]` |
 | `GET` | `/films/director/{directorId}?sortBy=year\|likes` | Фильмы режиссёра, сортировка по году или лайкам | `200 OK` + `[FilmDto]` |
+| `GET` | `/films/search?...` | Полноценный поиск по фильмам | `200 OK` + `[FilmDto]` |
 
 **Пример создания фильма:**
-
 ```bash
 curl -X POST http://localhost:8080/films \
   -H "Content-Type: application/json" \
@@ -257,7 +257,7 @@ GET /films/popular?count=10&genreId=1&year=2010
 Если указан `genreId`, но жанра с таким `id` нет — `404 Not Found`.
 Если совпадений нет — `200 OK` с пустым массивом.
 
-### Фильмы режиссёра
+**Фильмы режиссёра**
 
 ```http
 GET /films/director/{directorId}?sortBy=year|likes
@@ -275,6 +275,36 @@ GET /films/director/{directorId}?sortBy=year|likes
 ```bash
 curl "http://localhost:8080/films/director/1?sortBy=likes"
 ```
+
+**Поиск фильмов**
+```http
+GET /films/search?query=нолан&by=director,title&yearFrom=2000&yearTo=2020&mpaIds=2,3&from=0&size=10
+```
+
+| Параметр | Тип | Описание |
+|---|---|---|
+| `query` | строка | Текст для поиска (подстрока, регистронезависимо) |
+| `by` | строка | Где искать: `title`, `director`, `description` — любые через запятую. По умолчанию `title`, если задан `query` |
+| `year` | int | Точный год выпуска |
+| `yearFrom` | int | Год от (включительно) |
+| `yearTo` | int | Год до (включительно) |
+| `duration` | int | Точная длительность в минутах |
+| `durationFrom` | int | Длительность от (включительно) |
+| `durationTo` | int | Длительность до (включительно) |
+| `mpaIds` | список int через запятую | Фильтр по рейтингам MPA |
+| `from` | int, по умолчанию `0` | Пагинация |
+| `size` | int, по умолчанию `10`, макс `100` | Пагинация |
+
+Правила:
+
+- Все фильтры соединяются через `AND`. Внутри `query` — `OR` между выбранными `by`.
+- `year` и `yearFrom`/`yearTo` взаимоисключающие — иначе `400`.
+- `duration` и `durationFrom`/`durationTo` взаимоисключающие — иначе `400`.
+- Если `by` задан, а `query` пуст — `400` (вероятно, клиент забыл `query`).
+- Спецсимволы LIKE (`%`, `_`) в `query` трактуются буквально.
+- Без параметров возвращает всё, отсортированное по лайкам.
+
+Результаты отсортированы по убыванию лайков, при равенстве — по возрастанию `id`.
 
 ### Пользователи
 
