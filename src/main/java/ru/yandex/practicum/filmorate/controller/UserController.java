@@ -10,7 +10,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.dto.*;
-import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.service.FeedService;
 import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.UserService;
@@ -99,13 +98,13 @@ public class UserController {
     // «Сырые» ленты событий — id объектов.
 
     @GetMapping("/{userId}/feed/friends")
-    public ResponseEntity<List<Event>> getFeedFriends(@PathVariable Long userId) {
+    public ResponseEntity<List<EventDto>> getFeedFriends(@PathVariable Long userId) {
         return ResponseEntity
                 .ok(feedService.getFeedFriends(userId));
     }
 
     @GetMapping("/{userId}/feed/user")
-    public ResponseEntity<List<Event>> getFeedUser(@PathVariable Long userId) {
+    public ResponseEntity<List<EventDto>> getFeedUser(@PathVariable Long userId) {
         return ResponseEntity
                 .ok(feedService.getFeedUser(userId));
     }

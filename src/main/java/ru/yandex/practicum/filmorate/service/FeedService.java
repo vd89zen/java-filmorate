@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dto.*;
+import ru.yandex.practicum.filmorate.mapper.EventMapper;
 import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 
@@ -23,17 +24,17 @@ public class FeedService {
     private final EventService eventService;
 
     @Transactional(readOnly = true)
-    public List<Event> getFeedFriends(Long userId) {
+    public List<EventDto> getFeedFriends(Long userId) {
         log.info("Получение событий друзей пользователя ID {}.", userId);
         userService.checkUserExists(userId);
-        return eventService.getFeedFriends(userId);
+        return EventMapper.toDtoList(eventService.getFeedFriends(userId));
     }
 
     @Transactional(readOnly = true)
-    public List<Event> getFeedUser(Long userId) {
+    public List<EventDto> getFeedUser(Long userId) {
         log.info("Получение событий пользователя ID {}.", userId);
         userService.checkUserExists(userId);
-        return eventService.getFeedUser(userId);
+        return EventMapper.toDtoList(eventService.getFeedUser(userId));
     }
 
     @Transactional(readOnly = true)
@@ -70,7 +71,6 @@ public class FeedService {
                 .map(Event::getEntityId)
                 .collect(Collectors.toSet());
 
-        // Три батч-запроса вместо N+1.
         Map<Long, FilmShortDto> films = filmService.findShortByIds(filmIds);
         Map<Long, UserShortDto> users = userService.findShortByIds(userIds);
         Map<Long, ReviewShortDto> reviews = reviewService.findShortByIds(reviewIds);

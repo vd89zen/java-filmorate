@@ -1,10 +1,14 @@
 package ru.yandex.practicum.filmorate.dto;
 
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-@Builder
 @Data
-@EqualsAndHashCode(of = {"eventId"})
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class EventDto {
     private Long eventId;
     private Long timestamp;
