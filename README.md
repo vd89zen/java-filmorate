@@ -207,20 +207,20 @@ logging:
 
 ### Фильмы
 
-| Метод | Путь | Назначение | Успех |
-|---|---|---|---|
-| `POST` | `/films` | Создать фильм | `201 Created` + `FilmDto` |
-| `PUT` | `/films` | Обновить фильм | `200 OK` + `FilmDto` |
-| `GET` | `/films/{filmId}` | Получить фильм по id | `200 OK` + `FilmDto` |
-| `DELETE` | `/films/{filmId}` | Удалить фильм | `204 No Content` |
-| `GET` | `/films?from=0&size=10` | Страница фильмов | `200 OK` + `[FilmDto]` |
-| `PUT` | `/films/{filmId}/like/{userId}` | Поставить лайк | `204 No Content` |
-| `DELETE` | `/films/{filmId}/like/{userId}` | Снять лайк | `204 No Content` |
-| `GET` | `/films/popular?count=10` | Топ-N по лайкам | `200 OK` + `[FilmDto]` |
-| `GET` | `/films/common?userId={id}&friendId={id}` | Общие фильмы двух пользователей | `200 OK` + `[FilmDto]` |
-| `GET` | `/films/director/{directorId}?sortBy=year|likes` | Фильмы режиссёра, сортировка по году или лайкам | `200 OK` + `[FilmDto]` |
+| Метод | Путь                                               | Назначение | Успех |
+|---|----------------------------------------------------|---|---|
+| `POST` | `/films`                                           | Создать фильм | `201 Created` + `FilmDto` |
+| `PUT` | `/films`                                           | Обновить фильм | `200 OK` + `FilmDto` |
+| `GET` | `/films/{filmId}`                                  | Получить фильм по id | `200 OK` + `FilmDto` |
+| `DELETE` | `/films/{filmId}`                                  | Удалить фильм | `204 No Content` |
+| `GET` | `/films?from=0&size=10`                            | Страница фильмов | `200 OK` + `[FilmDto]` |
+| `PUT` | `/films/{filmId}/like/{userId}`                    | Поставить лайк | `204 No Content` |
+| `DELETE` | `/films/{filmId}/like/{userId}`                    | Снять лайк | `204 No Content` |
+| `GET` | `/films/popular?count=10&genreId=&year=` | Топ-N по лайкам с опциональной фильтрацией | `200 OK` + `[FilmDto]` |
+| `GET` | `/films/common?userId={id}&friendId={id}`          | Общие фильмы двух пользователей | `200 OK` + `[FilmDto]` |
+| `GET` | `/films/director/{directorId}?sortBy=year\|likes` | Фильмы режиссёра, сортировка по году или лайкам | `200 OK` + `[FilmDto]` |
 
-Пример создания фильма:
+**Пример создания фильма:**
 
 ```bash
 curl -X POST http://localhost:8080/films \
@@ -237,6 +237,25 @@ curl -X POST http://localhost:8080/films \
 ```
 
 Обратите внимание: `mpa`, элементы `genres` и `directors` передаются как объекты с полем `id` — это контракт API.
+
+**Топ популярных фильмов**
+
+```http
+GET /films/popular?count=10&genreId=1&year=2010
+```
+
+| Параметр | Обязательный | Описание |
+|---|---|---|
+| `count` | нет (по умолчанию `10`) | Сколько фильмов вернуть |
+| `genreId` | нет | Фильтр по жанру |
+| `year` | нет | Фильтр по году выпуска |
+
+Оба фильтра опциональны: без них возвращается общий топ по лайкам, с ними — топ только
+среди фильмов указанного жанра и/или года. Сортировка — по убыванию количества лайков,
+при равенстве — по возрастанию `id`. Фильмы без лайков в топ не попадают.
+
+Если указан `genreId`, но жанра с таким `id` нет — `404 Not Found`.
+Если совпадений нет — `200 OK` с пустым массивом.
 
 ### Фильмы режиссёра
 
