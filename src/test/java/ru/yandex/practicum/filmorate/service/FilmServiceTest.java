@@ -263,17 +263,69 @@ class FilmServiceTest {
             FilmDto f1 = filmService.create(newFilmRequest("F1"));
             FilmDto f2 = filmService.create(newFilmRequest("F2"));
 
-            // F2 — 2 лайка, F1 — 1 лайк (нужен второй пользователь для второго лайка)
             Long userId2 = userService.create(newUserRequest("user2@mail.com", "user2")).getId();
             filmService.likeFilm(f2.getId(), userId);
             filmService.likeFilm(f2.getId(), userId2);
             filmService.likeFilm(f1.getId(), userId);
 
-            List<FilmDto> top = filmService.getTopPopularFilms(10);
+            List<FilmDto> top = filmService.getTopPopularFilms(10, null, null);
 
             assertThat(top).hasSize(2);
             assertThat(top.get(0).getId()).isEqualTo(f2.getId());   // 2 лайка
             assertThat(top.get(1).getId()).isEqualTo(f1.getId());   // 1 лайк
+        }
+
+        @Test
+        @DisplayName("Фильтр по жанру")
+        void getTopPopularFilms_Should_FilterByGenre_Test() {
+            NewFilmRequest req1 = newFilmRequest("F1");
+            req1.setGenres(Set.of(new GenreId(1L)));
+            FilmDto f1 = filmService.create(req1);
+
+            NewFilmRequest req2 = newFilmRequest("F2");
+            req2.setGenres(Set.of(new GenreId(2L)));
+            FilmDto f2 = filmService.create(req2);
+
+            filmService.likeFilm(f1.getId(), userId);
+            filmService.likeFilm(f2.getId(), userId);
+
+            List<FilmDto> top = filmService.getTopPopularFilms(10, 1L, null);
+
+            assertThat(top).hasSize(1);
+            assertThat(top.get(0).getId()).isEqualTo(f1.getId());
+        }
+
+        @Test
+        @DisplayName("Фильтр по году")
+        void getTopPopularFilms_Should_FilterByYear_Test() {
+            NewFilmRequest req1 = newFilmRequest("F1");
+            req1.setReleaseDate(LocalDate.of(2010, 1, 1));
+            FilmDto f1 = filmService.create(req1);
+
+            NewFilmRequest req2 = newFilmRequest("F2");
+            req2.setReleaseDate(LocalDate.of(2020, 1, 1));
+            FilmDto f2 = filmService.create(req2);
+
+            filmService.likeFilm(f1.getId(), userId);
+            filmService.likeFilm(f2.getId(), userId);
+
+            List<FilmDto> top = filmService.getTopPopularFilms(10, null, 2010);
+
+            assertThat(top).hasSize(1);
+            assertThat(top.get(0).getId()).isEqualTo(f1.getId());
+        }
+
+        @Test
+        @DisplayName("Фильтр по несуществующему жанру → NotFoundException")
+        void getTopPopularFilms_Should_ThrowNotFound_ForMissingGenre_Test() {
+            assertThatThrownBy(() -> filmService.getTopPopularFilms(10, 999L, null))
+                    .isInstanceOf(NotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Пустой результат при отсутствии совпадений")
+        void getTopPopularFilms_Should_ReturnEmpty_WhenNoMatches_Test() {
+            assertThat(filmService.getTopPopularFilms(10, 1L, 1900)).isEmpty();
         }
     }
 

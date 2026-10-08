@@ -220,13 +220,24 @@ public class FilmService {
     }
 
     @Transactional(readOnly = true)
-    public List<FilmDto> getTopPopularFilms(Integer count) {
-        log.info("Получение списка из {} самых популярных фильмов", count);
-        LinkedHashMap<Long, Integer> filmsLikes = filmLikesDbStorage.getTopPopularFilmsIds(count);
-        List<Long> filmIds = List.copyOf(filmsLikes.keySet());
-        List<Film> films = filmStorage.findBySeveralIds(filmIds);
+    public List<FilmDto> getTopPopularFilms(Integer count, Long genreId, Integer year) {
+        log.info("Получение списка из {} самых популярных фильмов (genreId={}, year={})",
+                count, genreId, year);
 
-        Map<Long, Film> filmMap = films.stream().collect(Collectors.toMap(Film::getId, f -> f));
+        if (genreId != null) {
+            genreService.findById(genreId);
+        }
+
+        LinkedHashMap<Long, Integer> filmsLikes =
+                filmLikesDbStorage.getTopPopularFilmsIds(count, genreId, year);
+        List<Long> filmIds = List.copyOf(filmsLikes.keySet());
+        if (filmIds.isEmpty()) {
+            return List.of();
+        }
+
+        // findBySeveralIds не гарантирует порядок — восстанавливаем его по filmIds.
+        Map<Long, Film> filmMap = filmStorage.findBySeveralIds(filmIds).stream()
+                .collect(Collectors.toMap(Film::getId, film -> film));
         List<Film> orderedFilms = filmIds.stream()
                 .map(filmMap::get)
                 .filter(Objects::nonNull)

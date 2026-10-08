@@ -45,6 +45,19 @@ public class FilmLikesDbStorage {
             ORDER BY likes_count DESC
             LIMIT :limit
             """;
+    private static final String GET_TOP_POPULAR_FILMS_IDS_FILTERED_QUERY = """
+        SELECT fl.film_id, COUNT(fl.user_id) AS likes_count
+        FROM film_likes fl
+        JOIN films f ON f.id = fl.film_id
+        WHERE (CAST(:genreId AS BIGINT) IS NULL OR EXISTS (
+            SELECT 1 FROM film_genres fg
+            WHERE fg.film_id = f.id AND fg.genre_id = :genreId
+        ))
+        AND (CAST(:year AS INTEGER) IS NULL OR EXTRACT(YEAR FROM f.release_date) = :year)
+        GROUP BY fl.film_id
+        ORDER BY likes_count DESC, fl.film_id ASC
+        LIMIT :limit
+        """;
 
     private final JdbcOperations jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
@@ -89,21 +102,23 @@ public class FilmLikesDbStorage {
         return new HashSet<>(list);
     }
 
-    public LinkedHashMap<Long, Integer> getTopPopularFilmsIds(int count) {
-        MapSqlParameterSource params = new MapSqlParameterSource("limit", count);
+    public LinkedHashMap<Long, Integer> getTopPopularFilmsIds(int count, Long genreId, Integer year) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("limit", count)
+                .addValue("genreId", genreId)
+                .addValue("year", year);
+
         return namedJdbc.query(
-                        GET_TOP_POPULAR_FILMS_IDS_QUERY, params,
+                        GET_TOP_POPULAR_FILMS_IDS_FILTERED_QUERY, params,
                         (rs, rowNum) -> Map.entry(
                                 rs.getLong("film_id"),
-                                rs.getInt("likes_count")
-                        ))
+                                rs.getInt("likes_count")))
                 .stream()
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         Map.Entry::getValue,
                         (existing, replacement) -> existing,
-                        LinkedHashMap::new
-                ));
+                        LinkedHashMap::new));
     }
 
     public boolean deleteLikeFromFilmIfExists(Long filmId, Long userId) {

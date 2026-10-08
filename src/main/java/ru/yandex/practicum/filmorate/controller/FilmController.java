@@ -70,10 +70,12 @@ public class FilmController {
     }
 
     @GetMapping("/popular")
-    public ResponseEntity<List<FilmDto>> getMostPopularFilms(@RequestParam(defaultValue = "10")
-                                                             @NotNull @Positive Integer count) {
-        return ResponseEntity
-                .ok(filmService.getTopPopularFilms(count));
+    public ResponseEntity<List<FilmDto>> getMostPopularFilms(
+            @RequestParam(defaultValue = "10") @NotNull @Positive Integer count,
+            @RequestParam(required = false) @Positive Long genreId,
+            @RequestParam(required = false) @Positive Integer year) {
+        return ResponseEntity.ok(
+                filmService.getTopPopularFilms(count, genreId, year));
     }
 
     @GetMapping("/common")

@@ -10,8 +10,8 @@ CREATE TABLE IF NOT EXISTS friendship (
     user_id BIGINT NOT NULL,
     friend_id BIGINT NOT NULL,
     PRIMARY KEY (user_id, friend_id),
-    CONSTRAINT fk_friendship_user1 FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT fk_friendship_user2 FOREIGN KEY (friend_id) REFERENCES users(id)
+    CONSTRAINT fk_friendship_user1 FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_friendship_user2 FOREIGN KEY (friend_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS rating_mpaa (
@@ -46,8 +46,8 @@ CREATE TABLE IF NOT EXISTS film_likes (
     film_id BIGINT NOT NULL,
     user_id BIGINT NOT NULL,
     PRIMARY KEY (film_id, user_id),
-    CONSTRAINT fk_film_likes_films FOREIGN KEY (film_id) REFERENCES films(id),
-    CONSTRAINT fk_film_likes_users FOREIGN KEY (user_id) REFERENCES users(id)
+    CONSTRAINT fk_film_likes_films FOREIGN KEY (film_id) REFERENCES films(id) ON DELETE CASCADE,
+    CONSTRAINT fk_film_likes_users FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS event_types (

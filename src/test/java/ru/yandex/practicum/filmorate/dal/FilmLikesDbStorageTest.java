@@ -79,6 +79,39 @@ class FilmLikesDbStorageTest {
         return userStorage.create(user).getId();
     }
 
+    private record FilteredData(Long genre1, Long genre2,
+                                Long filmComedy2010, Long filmComedy2020, Long filmDrama2010) {}
+
+    private FilteredData prepareFilteredData() {
+        Long genre1 = 1L;  // Комедия
+        Long genre2 = 2L;  // Драма
+
+        Long filmComedy2010 = createFilmWithGenre("C2010", LocalDate.of(2010, 1, 1), genre1);
+        Long filmComedy2020 = createFilmWithGenre("C2020", LocalDate.of(2020, 1, 1), genre1);
+        Long filmDrama2010 = createFilmWithGenre("D2010", LocalDate.of(2010, 1, 1), genre2);
+
+        // Лайки: C2010 — 3, D2010 — 2, C2020 — 1
+        storage.addLikeIfNotExists(filmComedy2010, userId1);
+        storage.addLikeIfNotExists(filmComedy2010, userId2);
+        storage.addLikeIfNotExists(filmComedy2010, userId3);
+        storage.addLikeIfNotExists(filmDrama2010, userId2);
+        storage.addLikeIfNotExists(filmDrama2010, userId3);
+        storage.addLikeIfNotExists(filmComedy2020, userId1);
+
+        return new FilteredData(genre1, genre2,
+                filmComedy2010, filmComedy2020, filmDrama2010);
+    }
+
+    private Long createFilmWithGenre(String name, LocalDate date, Long genreId) {
+        Long filmId = filmStorage.create(Film.builder()
+                .name(name).description("desc")
+                .releaseDate(date).duration(120)
+                .mpa(new RatingMpaaId(1L)).build()).getId();
+        jdbcTemplate.update("INSERT INTO film_genres (film_id, genre_id) VALUES (?, ?)",
+                filmId, genreId);
+        return filmId;
+    }
+
     @Nested
     @DisplayName("Тесты hasUserLikedFilm()")
     class HasUserLikedFilmTests {
@@ -243,59 +276,6 @@ class FilmLikesDbStorageTest {
     }
 
     @Nested
-    @DisplayName("Тесты getTopPopularFilmsIds")
-    class GetTopPopularFilmsIdsTests {
-        @Test
-        @DisplayName("Проверяем получение топ‑фильмов по лайкам — должен вернуть корректную карту с сортировкой")
-        void getTopPopularFilmsIds_Should_Return_Correct_Sorted_Map_Test() {
-            // given
-            storage.addLikeIfNotExists(filmId1, userId1);
-            storage.addLikeIfNotExists(filmId1, userId2);
-            storage.addLikeIfNotExists(filmId1, userId3);
-            storage.addLikeIfNotExists(filmId2, userId1);
-            storage.addLikeIfNotExists(filmId3, userId3);
-            storage.addLikeIfNotExists(filmId3, userId1);
-            // when
-            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(3);
-            // then
-            assertThat(result)
-                    .hasSize(3)
-                    .containsKey(filmId1)
-                    .containsKey(filmId3)
-                    .containsKey(filmId2);
-            List<Long> orderedKeys = new ArrayList<>(result.keySet());
-            assertThat(orderedKeys).containsExactly(filmId1, filmId3, filmId2);
-        }
-
-        @Test
-        @DisplayName("Проверяем получение пустого результата при пустом запросе (count/limit = 0)")
-        void getTopPopularFilmsIds_Should_Return_Empty_Map_For_Limit_Zero_Test() {
-            // given, when
-            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(0);
-            // then
-            assertThat(result).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Проверяем получение всех фильмов при count/limit больше чем количество записей")
-        void getTopPopularFilmsIds_Should_Return_All_Films_When_Limit_Is_Large_Test() {
-            // given
-            storage.addLikeIfNotExists(filmId1, userId1);
-            storage.addLikeIfNotExists(filmId2, userId1);
-            storage.addLikeIfNotExists(filmId2, userId2);
-            // when
-            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(100);
-            // then
-            assertThat(result)
-                    .hasSize(2)
-                    .containsEntry(filmId2, 2)
-                    .containsEntry(filmId1, 1);
-            List<Long> orderedKeys = new ArrayList<>(result.keySet());
-            assertThat(orderedKeys).containsExactly(filmId2, filmId1);
-        }
-    }
-
-    @Nested
     @DisplayName("Тесты deleteLikeFromFilmIfExists")
     class DeleteLikeFromFilmIfExistsTests {
 
@@ -367,6 +347,110 @@ class FilmLikesDbStorageTest {
             boolean deletedAll = storage.deleteAllLikesFromFilmIfExists(999L);
             // then
             assertThat(deletedAll).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("Тесты getTopPopularFilmsIds()")
+    class GetTopPopularFilmsIdsTests {
+
+        @Test
+        @DisplayName("Сортировка по убыванию лайков")
+        void getTopPopularFilmsIds_Should_Return_Correct_Sorted_Map_Test() {
+            storage.addLikeIfNotExists(filmId1, userId1);
+            storage.addLikeIfNotExists(filmId1, userId2);
+            storage.addLikeIfNotExists(filmId1, userId3);
+            storage.addLikeIfNotExists(filmId2, userId1);
+            storage.addLikeIfNotExists(filmId3, userId3);
+            storage.addLikeIfNotExists(filmId3, userId1);
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(3, null, null);
+
+            assertThat(result)
+                    .hasSize(3)
+                    .containsKey(filmId1)
+                    .containsKey(filmId3)
+                    .containsKey(filmId2);
+            assertThat(new ArrayList<>(result.keySet()))
+                    .containsExactly(filmId1, filmId3, filmId2);
+        }
+
+        @Test
+        @DisplayName("limit = 0 → пустая карта")
+        void getTopPopularFilmsIds_Should_Return_Empty_Map_For_Limit_Zero_Test() {
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(0, null, null);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("limit больше количества записей → все фильмы")
+        void getTopPopularFilmsIds_Should_Return_All_Films_When_Limit_Is_Large_Test() {
+            storage.addLikeIfNotExists(filmId1, userId1);
+            storage.addLikeIfNotExists(filmId2, userId1);
+            storage.addLikeIfNotExists(filmId2, userId2);
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(100, null, null);
+
+            assertThat(result)
+                    .hasSize(2)
+                    .containsEntry(filmId2, 2)
+                    .containsEntry(filmId1, 1);
+            assertThat(new ArrayList<>(result.keySet()))
+                    .containsExactly(filmId2, filmId1);
+        }
+
+        @Test
+        @DisplayName("Фильтр по жанру: только фильмы этого жанра")
+        void getTopPopularFilmsIds_Should_FilterByGenre_Test() {
+            FilteredData data = prepareFilteredData();
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(10, data.genre1, null);
+
+            assertThat(result.keySet())
+                    .containsExactly(data.filmComedy2010, data.filmComedy2020);
+        }
+
+        @Test
+        @DisplayName("Фильтр по году: только фильмы указанного года")
+        void getTopPopularFilmsIds_Should_FilterByYear_Test() {
+            FilteredData data = prepareFilteredData();
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(10, null, 2010);
+
+            assertThat(result.keySet())
+                    .containsExactly(data.filmComedy2010, data.filmDrama2010);
+        }
+
+        @Test
+        @DisplayName("Жанр + год: совпадение по обоим фильтрам")
+        void getTopPopularFilmsIds_Should_FilterByGenreAndYear_Test() {
+            FilteredData data = prepareFilteredData();
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(10, data.genre1, 2010);
+
+            assertThat(result.keySet()).containsExactly(data.filmComedy2010);
+        }
+
+        @Test
+        @DisplayName("Нет совпадений → пустая карта")
+        void getTopPopularFilmsIds_Should_ReturnEmpty_WhenNoMatches_Test() {
+            FilteredData data = prepareFilteredData();
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(10, data.genre2, 2020);
+
+            assertThat(result).isEmpty();
+        }
+
+        @Test
+        @DisplayName("С фильтром по жанру + limit")
+        void getTopPopularFilmsIds_Should_LimitFilteredResult_Test() {
+            FilteredData data = prepareFilteredData();
+
+            LinkedHashMap<Long, Integer> result = storage.getTopPopularFilmsIds(1, data.genre1, null);
+
+            assertThat(result).hasSize(1);
+            assertThat(result.keySet()).containsExactly(data.filmComedy2010);
         }
     }
 }
