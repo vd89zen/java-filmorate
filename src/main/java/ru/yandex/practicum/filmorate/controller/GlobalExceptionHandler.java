@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
@@ -57,6 +58,20 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.toList());
 
         log.error("Произошла ошибка валидации параметров (ConstraintViolation): {}", errors);
+        return new ErrorResponse(errors);
+    }
+
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    @ExceptionHandler({HttpRequestMethodNotSupportedException.class})
+    public ErrorResponse handleMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
+        log.error("Неподдерживаемый HTTP-метод: {}", exception.getMessage());
+        List<ValidationError> errors = Collections.singletonList(
+                new ValidationError(
+                        "method",
+                        exception.getMessage(),
+                        exception.getMethod()
+                )
+        );
         return new ErrorResponse(errors);
     }
 
