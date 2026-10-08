@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FilmService")
+@DisplayName("FilmService Тесты")
 class FilmServiceTest {
 
     private final FilmService filmService;
@@ -499,6 +499,55 @@ class FilmServiceTest {
             filmService.create(newFilmRequest("B"));
 
             assertThat(filmService.search(base())).hasSize(2);
+        }
+    }
+
+    @Nested
+    @DisplayName("Тесты getRecommendations()")
+    class GetRecommendationsTests {
+
+        @Test
+        @DisplayName("Рекомендации: возвращает обогащённые FilmDto")
+        void getRecommendations_Should_ReturnEnrichedFilmDto_Test() {
+            // Создаём двух пользователей и фильмы
+            Long userA = userService.create(newUserRequest("a@mail.com", "a")).getId();
+            Long userB = userService.create(newUserRequest("b@mail.com", "b")).getId();
+
+            FilmDto film1 = filmService.create(newFilmRequest("Film1"));
+            FilmDto film2 = filmService.create(newFilmRequest("Film2"));
+            FilmDto film3 = filmService.create(newFilmRequest("Film3"));
+
+            // userA лайкнул film1, film2
+            filmService.likeFilm(film1.getId(), userA);
+            filmService.likeFilm(film2.getId(), userA);
+
+            // userB лайкнул film1, film2, film3 — пересечение 2
+            filmService.likeFilm(film1.getId(), userB);
+            filmService.likeFilm(film2.getId(), userB);
+            filmService.likeFilm(film3.getId(), userB);
+
+            List<FilmDto> recommendations = filmService.getRecommendations(userA);
+
+            assertThat(recommendations).hasSize(1);
+            assertThat(recommendations.get(0).getId()).isEqualTo(film3.getId());
+            // Проверяем, что DTO обогащён
+            assertThat(recommendations.get(0).getMpa()).isNotNull();
+            assertThat(recommendations.get(0).getLikesCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: пустой список для несуществующего пользователя → NotFoundException")
+        void getRecommendations_Should_ThrowNotFound_ForNonExistingUser_Test() {
+            assertThatThrownBy(() -> filmService.getRecommendations(999L))
+                    .isInstanceOf(NotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: пустой список, если нет похожих пользователей")
+        void getRecommendations_Should_ReturnEmpty_WhenNoSimilarUsers_Test() {
+            Long userId = userService.create(newUserRequest("a@mail.com", "a")).getId();
+            List<FilmDto> recommendations = filmService.getRecommendations(userId);
+            assertThat(recommendations).isEmpty();
         }
     }
 }

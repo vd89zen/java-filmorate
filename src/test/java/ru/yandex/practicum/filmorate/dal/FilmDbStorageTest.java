@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FilmDbStorage")
+@DisplayName("FilmDbStorage Тесты")
 class FilmDbStorageTest {
     private final FilmDbStorage filmStorage;
     private final FilmLikesDbStorage filmLikesStorage;

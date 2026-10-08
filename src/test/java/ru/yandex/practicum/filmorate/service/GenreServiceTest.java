@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты GenreService")
+@DisplayName("GenreService Тесты")
 class GenreServiceTest {
 
     private final GenreService genreService;

@@ -24,7 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты EventDbStorage")
+@DisplayName("EventDbStorage Тесты")
 class EventDbStorageTest {
 
     private final EventDbStorage eventDbStorage;

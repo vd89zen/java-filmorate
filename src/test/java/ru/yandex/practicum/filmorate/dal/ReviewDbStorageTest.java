@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты ReviewDbStorage")
+@DisplayName("ReviewDbStorage Тесты")
 class ReviewDbStorageTest {
 
     private final ReviewDbStorage reviewStorage;

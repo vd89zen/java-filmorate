@@ -20,6 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
+@DisplayName("FilmGenresDbStorage Тесты")
 class FilmGenresDbStorageTest {
 
     @Autowired

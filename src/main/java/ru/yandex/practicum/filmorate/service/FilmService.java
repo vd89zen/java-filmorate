@@ -301,6 +301,28 @@ public class FilmService {
         return enrichFilms(films);
     }
 
+    @Transactional(readOnly = true)
+    public List<FilmDto> getRecommendations(Long userId) {
+        log.info("Получение рекомендаций для пользователя ID {}", userId);
+        userService.checkUserExists(userId);
+
+        List<Long> filmIds = filmLikesDbStorage.getRecommendationFilmIds(userId);
+        if (filmIds.isEmpty()) {
+            return List.of();
+        }
+
+        // findBySeveralIds не гарантирует порядок — восстанавливаем его по filmIds.
+        Map<Long, Film> filmMap = filmStorage.findBySeveralIds(filmIds).stream()
+                .collect(Collectors.toMap(Film::getId, film -> film));
+        List<Film> orderedFilms = filmIds.stream()
+                .map(filmMap::get)
+                .filter(Objects::nonNull)
+                .toList();
+
+        return enrichFilms(orderedFilms);
+    }
+
+
     private void validateSearch(SearchRequest r) {
         Set<String> by = r.getBy() == null ? Set.of() : r.getBy();
         boolean hasQuery = r.getQuery() != null && !r.getQuery().isBlank();

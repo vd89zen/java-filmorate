@@ -27,7 +27,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FeedService — обогащённая лента событий")
+@DisplayName("FeedService Тесты")
 class FeedServiceTest {
 
     private final FeedService feedService;

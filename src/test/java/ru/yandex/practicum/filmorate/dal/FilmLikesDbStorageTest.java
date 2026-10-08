@@ -16,6 +16,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
+@DisplayName("FilmLikesDbStorage Тесты")
 class FilmLikesDbStorageTest {
 
     @Autowired
@@ -451,6 +452,98 @@ class FilmLikesDbStorageTest {
 
             assertThat(result).hasSize(1);
             assertThat(result.keySet()).containsExactly(data.filmComedy2010);
+        }
+    }
+
+    @Nested
+    @DisplayName("Тесты getRecommendationFilmIds()")
+    class GetRecommendationFilmIdsTests {
+
+        private Long userId4;
+        private Long film4;
+        private Long film5;
+
+        @BeforeEach
+        void initRecommendationData() {
+            // userId1, userId2, userId3, filmId1, filmId2, filmId3 уже созданы в setUp()
+            // Создаём дополнительного пользователя и фильмы
+            userId4 = createTestUser();
+            film4 = createTestFilm();
+            film5 = createTestFilm();
+
+            // userId1 лайкнул film1, film2, film3
+            storage.addLikeIfNotExists(filmId1, userId1);
+            storage.addLikeIfNotExists(filmId2, userId1);
+            storage.addLikeIfNotExists(filmId3, userId1);
+
+            // userId2 лайкнул film1, film2 (пересечение с userId1 = 2)
+            storage.addLikeIfNotExists(filmId1, userId2);
+            storage.addLikeIfNotExists(filmId2, userId2);
+
+            // userId3 лайкнул film1 (пересечение = 1)
+            storage.addLikeIfNotExists(filmId1, userId3);
+            // userId3 лайкнул film4, film5 — их должен увидеть userId1
+            storage.addLikeIfNotExists(film4, userId3);
+            storage.addLikeIfNotExists(film5, userId3);
+
+            // userId4 лайкнул film1, film2, film3 (пересечение = 3) — самый похожий
+            storage.addLikeIfNotExists(filmId1, userId4);
+            storage.addLikeIfNotExists(filmId2, userId4);
+            storage.addLikeIfNotExists(filmId3, userId4);
+            // userId4 лайкнул film4 — его тоже должен увидеть userId1
+            storage.addLikeIfNotExists(film4, userId4);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: возвращает фильмы, которые лайкнули похожие пользователи, но не лайкнул целевой")
+        void getRecommendationFilmIds_Should_ReturnRecommendedFilms_Test() {
+            List<Long> recommendations = storage.getRecommendationFilmIds(userId1);
+
+            // film4 лайкнут userId3 и userId4, film5 — только userId3
+            assertThat(recommendations)
+                    .containsExactlyInAnyOrder(film4, film5);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: не включает фильмы, уже лайкнутые целевым пользователем")
+        void getRecommendationFilmIds_Should_ExcludeAlreadyLikedFilms_Test() {
+            List<Long> recommendations = storage.getRecommendationFilmIds(userId1);
+
+            assertThat(recommendations)
+                    .doesNotContain(filmId1, filmId2, filmId3);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: сортировка по силе рекомендации")
+        void getRecommendationFilmIds_Should_SortByScoreDesc_Test() {
+            List<Long> recommendations = storage.getRecommendationFilmIds(userId1);
+
+            // film4 лайкнут двумя похожими пользователями, film5 — одним
+            // film4 должен быть первым
+            assertThat(recommendations).containsExactly(film4, film5);
+        }
+
+        @Test
+        @DisplayName("Рекомендации: пустой список, если нет похожих пользователей")
+        void getRecommendationFilmIds_Should_ReturnEmpty_WhenNoSimilarUsers_Test() {
+            // У пользователя с id 666 нет лайков — пересечений ни с кем
+            List<Long> recommendations = storage.getRecommendationFilmIds(666L);
+
+            assertThat(recommendations).isEmpty();
+        }
+
+        @Test
+        @DisplayName("Рекомендации: пустой список, если похожие пользователи не лайкнули ничего нового")
+        void getRecommendationFilmIds_Should_ReturnEmpty_WhenNoNewFilms_Test() {
+            // Проверим на userId2
+            // userId2 лайкнул film1, film2 — у него нет пересечений с userId4, который лайкнул film1,2,3,4
+            // userId2 и userId4 имеют пересечение film1, film2
+            // userId4 лайкнул film3, film4 — их нет у userId2
+            List<Long> recommendations = storage.getRecommendationFilmIds(userId2);
+
+            // userId4 — самый похожий (пересечение 2: film1, film2)
+            // Он лайкнул film3, film4 — их нет у userId2
+            assertThat(recommendations).contains(filmId3, film4);
         }
     }
 }
