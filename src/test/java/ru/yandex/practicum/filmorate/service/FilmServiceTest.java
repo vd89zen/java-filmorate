@@ -72,6 +72,12 @@ class FilmServiceTest {
         return r;
     }
 
+    private NewDirectorRequest newDirectorRequest(String name) {
+        NewDirectorRequest r = new NewDirectorRequest();
+        r.setName(name);
+        return r;
+    }
+
     @Nested
     @DisplayName("Тесты create()")
     class CreateTests {
@@ -385,9 +391,114 @@ class FilmServiceTest {
         }
     }
 
-    private NewDirectorRequest newDirectorRequest(String name) {
-        NewDirectorRequest r = new NewDirectorRequest();
-        r.setName(name);
-        return r;
+    @Nested
+    @DisplayName("Тесты search()")
+    class SearchTests {
+
+        private SearchRequest base() {
+            return SearchRequest.builder()
+                    .query(null).by(Set.of()).mpaIds(Set.of())
+                    .from(0).size(10)
+                    .build();
+        }
+
+        @Test
+        @DisplayName("by без query → ValidationException")
+        void search_Should_Throw_WhenByWithoutQuery_Test() {
+            SearchRequest r = base();
+            r.setBy(Set.of("title"));
+
+            assertThatThrownBy(() -> filmService.search(r))
+                    .isInstanceOf(ValidationException.class);
+        }
+
+        @Test
+        @DisplayName("Недопустимое by → ValidationException")
+        void search_Should_Throw_ForInvalidBy_Test() {
+            SearchRequest r = base();
+            r.setQuery("abc");
+            r.setBy(Set.of("year"));
+
+            assertThatThrownBy(() -> filmService.search(r))
+                    .isInstanceOf(ValidationException.class);
+        }
+
+        @Test
+        @DisplayName("query без by → дефолт title")
+        void search_Should_DefaultToTitle_WhenByEmpty_Test() {
+            filmService.create(newFilmRequest("FindMe"));
+
+            SearchRequest r = base();
+            r.setQuery("find");
+
+            assertThat(filmService.search(r)).hasSize(1);
+        }
+
+        @Test
+        @DisplayName("year + yearFrom → ValidationException")
+        void search_Should_Throw_WhenYearConflictsWithRange_Test() {
+            SearchRequest r = base();
+            r.setYear(2010);
+            r.setYearFrom(2000);
+
+            assertThatThrownBy(() -> filmService.search(r))
+                    .isInstanceOf(ValidationException.class);
+        }
+
+        @Test
+        @DisplayName("yearFrom > yearTo → ValidationException")
+        void search_Should_Throw_WhenYearRangeInvalid_Test() {
+            SearchRequest r = base();
+            r.setYearFrom(2020);
+            r.setYearTo(2010);
+
+            assertThatThrownBy(() -> filmService.search(r))
+                    .isInstanceOf(ValidationException.class);
+        }
+
+        @Test
+        @DisplayName("durationFrom > durationTo → ValidationException")
+        void search_Should_Throw_WhenDurationRangeInvalid_Test() {
+            SearchRequest r = base();
+            r.setDurationFrom(200);
+            r.setDurationTo(100);
+
+            assertThatThrownBy(() -> filmService.search(r))
+                    .isInstanceOf(ValidationException.class);
+        }
+
+        @Test
+        @DisplayName("Все параметры вместе → ok, результат обогащён")
+        void search_Should_WorkWithAllFilters_Test() {
+            Long directorId = directorService.create(newDirectorRequest("Nolan")).getId();
+            NewFilmRequest req = newFilmRequest("Inception");
+            req.setGenres(Set.of(new GenreId(1L)));
+            req.setDirectors(Set.of(new DirectorId(directorId)));
+            FilmDto created = filmService.create(req);
+            filmService.likeFilm(created.getId(), userId);
+
+            SearchRequest r = base();
+            r.setQuery("nolan");
+            r.setBy(Set.of("director"));
+            r.setMpaIds(Set.of(1L));
+
+            List<FilmDto> result = filmService.search(r);
+
+            assertThat(result).hasSize(1);
+            FilmDto dto = result.get(0);
+            assertThat(dto.getMpa()).isNotNull();
+            assertThat(dto.getGenres()).hasSize(1);
+            assertThat(dto.getDirectors()).hasSize(1);
+            assertThat(dto.getLikesCount()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("Без параметров — ведёт себя как findAll")
+        void search_Should_ActAsFindAll_WhenNoParams_Test() {
+            filmService.create(newFilmRequest("A"));
+            filmService.create(newFilmRequest("B"));
+
+            assertThat(filmService.search(base())).hasSize(2);
+        }
     }
 }

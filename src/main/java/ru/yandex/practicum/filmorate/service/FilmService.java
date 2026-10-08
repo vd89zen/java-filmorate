@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 public class FilmService {
     private static final LocalDate MOVIE_BIRTHDAY = LocalDate.of(1895, 12, 28);
     private static final String FILM_NOT_FOUND = "Фильм с id = %d не найден.";
+    private static final Set<String> VALID_SEARCH_BY = Set.of("title", "director", "description");
     private final FilmDbStorage filmStorage;
     private final FilmGenresDbStorage filmGenresDbStorage;
     private final FilmLikesDbStorage filmLikesDbStorage;
@@ -287,6 +288,77 @@ public class FilmService {
         };
 
         return enrichFilms(films);
+    }
+
+    @Transactional(readOnly = true)
+    public List<FilmDto> search(SearchRequest request) {
+        log.info("Поиск фильмов: {}", request);
+
+        validateSearch(request);
+        normalizeSearchBy(request);
+
+        List<Film> films = filmStorage.search(request);
+        return enrichFilms(films);
+    }
+
+    private void validateSearch(SearchRequest r) {
+        Set<String> by = r.getBy() == null ? Set.of() : r.getBy();
+        boolean hasQuery = r.getQuery() != null && !r.getQuery().isBlank();
+
+        if (!VALID_SEARCH_BY.containsAll(by)) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("by")
+                    .message("Допустимые значения: title, director, description (через запятую).")
+                    .rejectedValue(by)
+                    .build());
+        }
+        if (!by.isEmpty() && !hasQuery) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("query")
+                    .message("Параметр by задан, но query отсутствует.")
+                    .rejectedValue(r.getQuery())
+                    .build());
+        }
+        if (r.getYear() != null && (r.getYearFrom() != null || r.getYearTo() != null)) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("year")
+                    .message("Нельзя комбинировать year с yearFrom/yearTo.")
+                    .rejectedValue(r.getYear())
+                    .build());
+        }
+        if (r.getYearFrom() != null && r.getYearTo() != null && r.getYearFrom() > r.getYearTo()) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("yearFrom")
+                    .message("yearFrom должен быть не больше yearTo.")
+                    .rejectedValue(r.getYearFrom())
+                    .build());
+        }
+        if (r.getDuration() != null && (r.getDurationFrom() != null || r.getDurationTo() != null)) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("duration")
+                    .message("Нельзя комбинировать duration с durationFrom/durationTo.")
+                    .rejectedValue(r.getDuration())
+                    .build());
+        }
+        if (r.getDurationFrom() != null && r.getDurationTo() != null
+                && r.getDurationFrom() > r.getDurationTo()) {
+            throw new ValidationException(ValidationError.builder()
+                    .field("durationFrom")
+                    .message("durationFrom должен быть не больше durationTo.")
+                    .rejectedValue(r.getDurationFrom())
+                    .build());
+        }
+    }
+
+    /**
+     * Если query задан, а by пустой — ищем по названию (дефолт).
+     */
+    private void normalizeSearchBy(SearchRequest r) {
+        boolean hasQuery = r.getQuery() != null && !r.getQuery().isBlank();
+        Set<String> by = r.getBy() == null ? Set.of() : r.getBy();
+        if (hasQuery && by.isEmpty()) {
+            r.setBy(Set.of("title"));
+        }
     }
 
     private void checkDate(LocalDate date) {

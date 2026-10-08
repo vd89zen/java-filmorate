@@ -164,4 +164,68 @@ class FilmControllerTest {
                     .andExpect(status().isNotFound());
         }
     }
+
+    @Nested
+    @DisplayName("GET /films/search")
+    class SearchTests {
+
+        @Test
+        @DisplayName("by=title → 200")
+        void search_ByTitle_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("query", "test")
+                            .param("by", "title"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("by=director,title,description → 200")
+        void search_ByAllFields_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("query", "test")
+                            .param("by", "director,title,description"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("by без query → 400")
+        void search_ByWithoutQuery_Should_ReturnBadRequest_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("by", "director"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("Недопустимое by → 400")
+        void search_InvalidBy_Should_ReturnBadRequest_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("query", "test")
+                            .param("by", "year"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("year + yearFrom → 400")
+        void search_YearConflict_Should_ReturnBadRequest_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("year", "2010")
+                            .param("yearFrom", "2000"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("mpaIds=1,2 → 200")
+        void search_MpaIdsCsv_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("mpaIds", "1,2"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("Без параметров → 200 и все фильмы")
+        void search_NoParams_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search"))
+                    .andExpect(status().isOk());
+        }
+    }
 }

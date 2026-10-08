@@ -5,9 +5,10 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
+import ru.yandex.practicum.filmorate.dto.SearchRequest;
 import ru.yandex.practicum.filmorate.model.Film;
-import java.util.List;
-import java.util.Optional;
+
+import java.util.*;
 
 @Repository
 public class FilmDbStorage extends BaseDbStorage<Film> {
@@ -117,5 +118,120 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
 
     public List<Film> findByDirectorSortedByLikes(Long directorId) {
         return findMany(FIND_FILMS_BY_DIRECTOR_SORTED_BY_LIKES_QUERY, directorId);
+    }
+
+    public List<Film> search(SearchRequest request) {
+        StringBuilder sql = new StringBuilder("""
+            SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+            FROM films f
+            LEFT JOIN film_likes fl ON fl.film_id = f.id
+            """);
+
+        List<String> conditions = new ArrayList<>();
+        MapSqlParameterSource params = new MapSqlParameterSource();
+
+        appendTextCondition(request, conditions, params);
+        appendYearCondition(request, conditions, params);
+        appendDurationCondition(request, conditions, params);
+        appendMpaCondition(request, conditions, params);
+
+        if (!conditions.isEmpty()) {
+            sql.append(" WHERE ").append(String.join(" AND ", conditions));
+        }
+
+        sql.append(" GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id");
+        sql.append(" ORDER BY COUNT(fl.user_id) DESC, f.id ASC");
+        sql.append(" LIMIT :limit OFFSET :offset");
+
+        params.addValue("limit", request.getSize());
+        params.addValue("offset", request.getFrom());
+
+        return namedJdbc.query(sql.toString(), params, mapper);
+    }
+
+    private void appendTextCondition(SearchRequest request, List<String> conditions,
+                                     MapSqlParameterSource params) {
+        String query = request.getQuery();
+        if (query == null || query.isBlank()) {
+            return;
+        }
+        String pattern = "%" + escapeLike(query.toLowerCase(Locale.ROOT)) + "%";
+        params.addValue("queryPattern", pattern);
+
+        List<String> orParts = new ArrayList<>();
+        Set<String> by = request.getBy() == null ? Set.of() : request.getBy();
+        if (by.contains("title")) {
+            orParts.add("LOWER(f.name) LIKE :queryPattern ESCAPE '!'");
+        }
+        if (by.contains("description")) {
+            orParts.add("LOWER(f.description) LIKE :queryPattern ESCAPE '!'");
+        }
+        if (by.contains("director")) {
+            orParts.add("""
+                EXISTS (
+                    SELECT 1 FROM film_directors fd
+                    JOIN directors d ON d.id = fd.director_id
+                    WHERE fd.film_id = f.id
+                      AND LOWER(d.name) LIKE :queryPattern ESCAPE '!'
+                )
+                """);
+        }
+        if (!orParts.isEmpty()) {
+            conditions.add("(" + String.join(" OR ", orParts) + ")");
+        }
+    }
+
+    private void appendYearCondition(SearchRequest request, List<String> conditions,
+                                     MapSqlParameterSource params) {
+        if (request.getYear() != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) = :year");
+            params.addValue("year", request.getYear());
+            return;
+        }
+        if (request.getYearFrom() != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) >= :yearFrom");
+            params.addValue("yearFrom", request.getYearFrom());
+        }
+        if (request.getYearTo() != null) {
+            conditions.add("EXTRACT(YEAR FROM f.release_date) <= :yearTo");
+            params.addValue("yearTo", request.getYearTo());
+        }
+    }
+
+    private void appendDurationCondition(SearchRequest request, List<String> conditions,
+                                         MapSqlParameterSource params) {
+        if (request.getDuration() != null) {
+            conditions.add("f.duration = :duration");
+            params.addValue("duration", request.getDuration());
+            return;
+        }
+        if (request.getDurationFrom() != null) {
+            conditions.add("f.duration >= :durationFrom");
+            params.addValue("durationFrom", request.getDurationFrom());
+        }
+        if (request.getDurationTo() != null) {
+            conditions.add("f.duration <= :durationTo");
+            params.addValue("durationTo", request.getDurationTo());
+        }
+    }
+
+    private void appendMpaCondition(SearchRequest request, List<String> conditions,
+                                    MapSqlParameterSource params) {
+        Set<Long> mpaIds = request.getMpaIds();
+        if (mpaIds != null && !mpaIds.isEmpty()) {
+            conditions.add("f.rating_mpaa_id IN (:mpaIds)");
+            params.addValue("mpaIds", mpaIds);
+        }
+    }
+
+    /**
+     * Экранирует спецсимволы LIKE (%, _, !), чтобы пользовательский ввод
+     * трактовался буквально. Символ '!' выбран как ESCAPE в SQL.
+     */
+    private static String escapeLike(String value) {
+        return value
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
     }
 }
