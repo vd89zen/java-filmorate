@@ -3,7 +3,9 @@ CREATE TABLE IF NOT EXISTS users (
     email VARCHAR(255) NOT NULL UNIQUE,
     login VARCHAR(255) NOT NULL,
     name VARCHAR(255) NOT NULL,
-    birthday DATE NOT NULL
+    birthday DATE NOT NULL,
+    password VARCHAR(100) NOT NULL DEFAULT '',
+    role VARCHAR(20) NOT NULL DEFAULT 'USER'
 );
 
 CREATE TABLE IF NOT EXISTS friendship (

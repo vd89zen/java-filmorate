@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class UserMapper {
@@ -14,6 +15,8 @@ public final class UserMapper {
                 .login(newUserRequest.getLogin())
                 .name(newUserRequest.getName())
                 .birthday(newUserRequest.getBirthday())
+                .password(newUserRequest.getPassword())
+                .role(Role.USER)
                 .build();
     }
 
@@ -32,7 +35,6 @@ public final class UserMapper {
                 .id(user.getId())
                 .login(user.getLogin())
                 .name(user.getName())
-                .birthday(user.getBirthday())
                 .build();
     }
 
@@ -40,15 +42,12 @@ public final class UserMapper {
         if (request.hasEmail()) {
             user.setEmail(request.getEmail());
         }
-
         if (request.hasLogin()) {
             user.setLogin(request.getLogin());
         }
-
         if (request.hasName()) {
             user.setName(request.getName());
         }
-
         if (request.hasBirthday()) {
             user.setBirthday(request.getBirthday());
         }

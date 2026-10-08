@@ -16,29 +16,29 @@ public class UserDbStorage extends BaseDbStorage<User> {
     private static final String IS_USER_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
     private static final String IS_EMAIL_ALREADY_USE_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)";
     private static final String FIND_USER_BY_ID_QUERY = """
-        SELECT id, email, login, name, birthday
+        SELECT id, email, login, name, birthday, password, role
         FROM users
         WHERE id = ?
         """;
     private static final String FIND_USERS_BY_IDS_QUERY = """
-        SELECT id, email, login, name, birthday
+        SELECT id, email, login, name, birthday, password, role
         FROM users
         WHERE id IN (:usersIds)
         ORDER BY id
         """;
     private static final String FIND_ALL_USERS_PAGINATED_QUERY = """
-        SELECT id, email, login, name, birthday
+        SELECT id, email, login, name, birthday, password, role
         FROM users
         ORDER BY id
         LIMIT ? OFFSET ?
         """;
     private static final String INSERT_USER_QUERY = """
-        INSERT INTO users(email, login, name, birthday)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO users(email, login, name, birthday, password, role)
+        VALUES (?, ?, ?, ?, ?, ?)
         """;
     private static final String UPDATE_USER_QUERY = """
         UPDATE users
-        SET email = ?, login = ?, name = ?, birthday = ?
+        SET email = ?, login = ?, name = ?, birthday = ?, password = ?
         WHERE id = ?
         """;
 
@@ -54,7 +54,9 @@ public class UserDbStorage extends BaseDbStorage<User> {
                 newUser.getEmail(),
                 newUser.getLogin(),
                 newUser.getName(),
-                newUser.getBirthday()
+                newUser.getBirthday(),
+                newUser.getPassword(),
+                newUser.getRole().name()
         );
         newUser.setId(returnedId);
         return newUser;
@@ -66,6 +68,7 @@ public class UserDbStorage extends BaseDbStorage<User> {
                 updatingUser.getLogin(),
                 updatingUser.getName(),
                 updatingUser.getBirthday(),
+                updatingUser.getPassword(),
                 updatingUser.getId());
     }
 
