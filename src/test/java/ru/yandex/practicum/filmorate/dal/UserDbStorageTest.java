@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты UserDbStorage")
+@DisplayName("UserDbStorage Тесты")
 class UserDbStorageTest {
     private static final String TEST_EMAIL = "test@test.com";
 

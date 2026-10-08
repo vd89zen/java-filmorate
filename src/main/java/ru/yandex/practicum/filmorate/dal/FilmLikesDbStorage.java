@@ -58,6 +58,21 @@ public class FilmLikesDbStorage {
         ORDER BY likes_count DESC, fl.film_id ASC
         LIMIT :limit
         """;
+    private static final String GET_RECOMMENDATION_FILM_IDS_QUERY = """
+        WITH user_similarity AS (
+            SELECT fl2.user_id AS similar_user_id, COUNT(*) AS common_likes
+            FROM film_likes fl1
+            JOIN film_likes fl2 ON fl1.film_id = fl2.film_id
+            WHERE fl1.user_id = :userId AND fl2.user_id != :userId
+            GROUP BY fl2.user_id
+        )
+        SELECT fl.film_id
+        FROM film_likes fl
+        JOIN user_similarity us ON fl.user_id = us.similar_user_id
+        WHERE fl.film_id NOT IN (SELECT film_id FROM film_likes WHERE user_id = :userId)
+        GROUP BY fl.film_id
+        ORDER BY SUM(us.common_likes) DESC
+        """;
 
     private final JdbcOperations jdbc;
     private final NamedParameterJdbcTemplate namedJdbc;
@@ -127,5 +142,10 @@ public class FilmLikesDbStorage {
 
     public boolean deleteAllLikesFromFilmIfExists(Long filmId) {
         return jdbc.update(DELETE_ALL_LIKES_OF_FILM_QUERY, filmId) > 0;
+    }
+
+    public List<Long> getRecommendationFilmIds(Long userId) {
+        MapSqlParameterSource params = new MapSqlParameterSource("userId", userId);
+        return namedJdbc.queryForList(GET_RECOMMENDATION_FILM_IDS_QUERY, params, Long.class);
     }
 }

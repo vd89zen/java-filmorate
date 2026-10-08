@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты ReviewService")
+@DisplayName("ReviewService Тесты")
 class ReviewServiceTest {
 
     private final ReviewService reviewService;

@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты EventService")
+@DisplayName("EventService Тесты")
 class EventServiceTest {
 
     private final EventService eventService;

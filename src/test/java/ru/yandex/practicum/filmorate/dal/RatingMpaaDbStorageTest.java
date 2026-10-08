@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты RatingMpaaDbStorage")
+@DisplayName("RatingMpaaDbStorage Тесты")
 class RatingMpaaDbStorageTest {
 
     @Autowired

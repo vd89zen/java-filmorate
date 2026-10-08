@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FilmDirectorsDbStorage")
+@DisplayName("FilmDirectorsDbStorage Тесты")
 class FilmDirectorsDbStorageTest {
 
     @Autowired private JdbcTemplate jdbcTemplate;

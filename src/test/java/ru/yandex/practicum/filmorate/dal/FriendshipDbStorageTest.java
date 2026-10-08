@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.*;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FriendshipDbStorage")
+@DisplayName("FriendshipDbStorage Тесты")
 class FriendshipDbStorageTest {
 
     @Autowired

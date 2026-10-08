@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты UserController")
+@DisplayName("UserController Тесты")
 class UserControllerTest {
 
     @Autowired
@@ -171,6 +171,36 @@ class UserControllerTest {
             mockMvc.perform(get("/users/{id}/feed/user/enriched", u1))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$", hasSize(0)));
+        }
+    }
+
+    @Nested
+    @DisplayName("GET /users/{id}/recommendations")
+    class RecommendationsTests {
+
+        @Test
+        @DisplayName("200 для существующего пользователя")
+        void getRecommendations_Should_ReturnOk_Test() throws Exception {
+            Long userId = createUser("a@mail.com", "a");
+
+            mockMvc.perform(get("/users/{id}/recommendations", userId))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("404 для несуществующего пользователя")
+        void getRecommendations_Should_ReturnNotFound_Test() throws Exception {
+            mockMvc.perform(get("/users/{id}/recommendations", 999L))
+                    .andExpect(status().isNotFound());
+        }
+
+        private Long createUser(String email, String login) throws Exception {
+            String response = mockMvc.perform(post("/users")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(userJson(email, login)))
+                    .andReturn().getResponse().getContentAsString();
+
+            return objectMapper.readTree(response).get("id").asLong();
         }
     }
 }

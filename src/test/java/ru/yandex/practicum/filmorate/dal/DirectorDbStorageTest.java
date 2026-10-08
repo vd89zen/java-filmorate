@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @SpringBootTest
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты DirectorDbStorage")
+@DisplayName("DirectorDbStorage Тесты")
 class DirectorDbStorageTest {
 
     private final DirectorDbStorage directorStorage;

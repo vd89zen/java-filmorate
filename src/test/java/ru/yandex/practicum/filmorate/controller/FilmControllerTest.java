@@ -22,7 +22,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("Тесты FilmController")
+@DisplayName("FilmController Тесты")
 class FilmControllerTest {
 
     @Autowired private MockMvc mockMvc;

@@ -9,12 +9,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.yandex.practicum.filmorate.dto.EnrichedEventDto;
-import ru.yandex.practicum.filmorate.dto.NewUserRequest;
-import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
-import ru.yandex.practicum.filmorate.dto.UserDto;
+import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.model.Event;
 import ru.yandex.practicum.filmorate.service.FeedService;
+import ru.yandex.practicum.filmorate.service.FilmService;
 import ru.yandex.practicum.filmorate.service.UserService;
 import java.util.*;
 
@@ -24,10 +22,12 @@ import java.util.*;
 public class UserController {
     private final UserService userService;
     private final FeedService feedService;
+    private final FilmService filmService;
 
-    public UserController(UserService userService, FeedService feedService) {
+    public UserController(UserService userService, FeedService feedService, FilmService filmService) {
         this.userService = userService;
         this.feedService = feedService;
+        this.filmService = filmService;
     }
 
     @PostMapping
@@ -88,6 +88,12 @@ public class UserController {
                                                           @PathVariable @NotNull @Positive Long friendId) {
         return ResponseEntity
                 .ok(userService.getCommonFriends(userId, friendId));
+    }
+
+    @GetMapping("/{userId}/recommendations")
+    public ResponseEntity<List<FilmDto>> getRecommendations(
+            @PathVariable @NotNull @Positive Long userId) {
+        return ResponseEntity.ok(filmService.getRecommendations(userId));
     }
 
     // «Сырые» ленты событий — id объектов.
