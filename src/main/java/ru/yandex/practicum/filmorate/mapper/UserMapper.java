@@ -27,6 +27,7 @@ public final class UserMapper {
                 .login(user.getLogin())
                 .name(user.getName())
                 .birthday(user.getBirthday())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 
@@ -35,6 +36,7 @@ public final class UserMapper {
                 .id(user.getId())
                 .login(user.getLogin())
                 .name(user.getName())
+                .createdAt(user.getCreatedAt())
                 .build();
     }
 

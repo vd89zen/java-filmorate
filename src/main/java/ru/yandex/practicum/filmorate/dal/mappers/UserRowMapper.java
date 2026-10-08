@@ -7,6 +7,7 @@ import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 @Component
 public class UserRowMapper implements RowMapper<User> {
@@ -20,6 +21,7 @@ public class UserRowMapper implements RowMapper<User> {
                 .birthday(rs.getDate("birthday").toLocalDate())
                 .password(rs.getString("password"))
                 .role(Role.valueOf(rs.getString("role")))
+                .createdAt(rs.getObject("created_at", LocalDateTime.class))
                 .build();
     }
 }

@@ -16,18 +16,18 @@ public class UserDbStorage extends BaseDbStorage<User> {
     private static final String IS_USER_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE id = ?)";
     private static final String IS_EMAIL_ALREADY_USE_QUERY = "SELECT EXISTS(SELECT 1 FROM users WHERE email = ?)";
     private static final String FIND_USER_BY_ID_QUERY = """
-        SELECT id, email, login, name, birthday, password, role
+        SELECT id, email, login, name, birthday, password, role, created_at
         FROM users
         WHERE id = ?
         """;
     private static final String FIND_USERS_BY_IDS_QUERY = """
-        SELECT id, email, login, name, birthday, password, role
+        SELECT id, email, login, name, birthday, password, role, created_at
         FROM users
         WHERE id IN (:usersIds)
         ORDER BY id
         """;
     private static final String FIND_ALL_USERS_PAGINATED_QUERY = """
-        SELECT id, email, login, name, birthday, password, role
+        SELECT id, email, login, name, birthday, password, role, created_at
         FROM users
         ORDER BY id
         LIMIT ? OFFSET ?

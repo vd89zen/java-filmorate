@@ -53,7 +53,10 @@ public class UserService {
         newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         normalizeUser(newUser);
         User savedUser = userStorage.create(newUser);
-        return UserMapper.mapToUserDto(savedUser);
+        User reloaded = userStorage.findById(savedUser.getId())
+                .orElseThrow(() -> new NotFoundException("Не удалось перечитать пользователя после создания."));
+
+        return UserMapper.mapToUserDto(reloaded);
     }
 
     public UserDto findById(Long userId) {
