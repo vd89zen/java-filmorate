@@ -1,34 +1,24 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.controller.pub;
 
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.dto.FilmDto;
-import ru.yandex.practicum.filmorate.dto.NewFilmRequest;
 import ru.yandex.practicum.filmorate.dto.SearchRequest;
-import ru.yandex.practicum.filmorate.dto.UpdateFilmRequest;
 import ru.yandex.practicum.filmorate.service.FilmService;
+
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Validated
 @RestController
 @RequestMapping("/films")
-public class FilmController {
+public class FilmPublicController {
     private final FilmService filmService;
 
-    public FilmController(FilmService filmService) {
+    public FilmPublicController(FilmService filmService) {
         this.filmService = filmService;
-    }
-
-    @PostMapping
-    public ResponseEntity<FilmDto> create(@Valid @RequestBody NewFilmRequest newFilmRequest) {
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(filmService.create(newFilmRequest));
     }
 
     @GetMapping("/{filmId}")
@@ -45,46 +35,13 @@ public class FilmController {
                 .ok(filmService.findAll(from, size));
     }
 
-    @PutMapping
-    public ResponseEntity<FilmDto> update(@Valid @RequestBody UpdateFilmRequest updateFilmRequest) {
-        return ResponseEntity
-                .ok(filmService.update(updateFilmRequest));
-    }
-
-    @DeleteMapping("/{filmId}")
-    public ResponseEntity<Void> delete(@PathVariable Long filmId) {
-        filmService.delete(filmId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @PutMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Void> addLike(@PathVariable @NotNull @Positive Long filmId,
-                                        @PathVariable @NotNull @Positive Long userId) {
-        filmService.likeFilm(filmId, userId);
-        return ResponseEntity.noContent().build();
-    }
-
-    @DeleteMapping("/{filmId}/like/{userId}")
-    public ResponseEntity<Void> removeLike(@PathVariable @NotNull @Positive Long filmId,
-                                           @PathVariable @NotNull @Positive Long userId) {
-        filmService.unlikeFilm(filmId, userId);
-        return ResponseEntity.noContent().build();
-    }
-
     @GetMapping("/popular")
     public ResponseEntity<List<FilmDto>> getMostPopularFilms(
             @RequestParam(defaultValue = "10") @NotNull @Positive Integer count,
             @RequestParam(required = false) @Positive Long genreId,
             @RequestParam(required = false) @Positive Integer year) {
-        return ResponseEntity.ok(
-                filmService.getTopPopularFilms(count, genreId, year));
-    }
-
-    @GetMapping("/common")
-    public ResponseEntity<List<FilmDto>> getCommonFilms(@RequestParam @NotNull @Positive Long userId,
-                                                        @RequestParam @NotNull @Positive Long friendId) {
         return ResponseEntity
-                .ok(filmService.getCommonFilms(userId, friendId));
+                .ok(filmService.getTopPopularFilms(count, genreId, year));
     }
 
     @GetMapping("/director/{directorId}")
@@ -122,8 +79,7 @@ public class FilmController {
                 .size(size)
                 .build();
 
-        return ResponseEntity
-                .ok(filmService.search(request));
+        return ResponseEntity.ok(filmService.search(request));
     }
 
     private static Set<String> parseBy(String by) {

@@ -1,7 +1,6 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.controller.auth;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.HttpStatus;
@@ -13,18 +12,17 @@ import ru.yandex.practicum.filmorate.dto.ReviewDto;
 import ru.yandex.practicum.filmorate.dto.UpdateReviewRequest;
 import ru.yandex.practicum.filmorate.service.ReviewService;
 
-import java.util.List;
-
 @Validated
 @RestController
 @RequestMapping("/reviews")
-public class ReviewController {
+public class ReviewAuthController {
     private final ReviewService reviewService;
 
-    public ReviewController(ReviewService reviewService) {
+    public ReviewAuthController(ReviewService reviewService) {
         this.reviewService = reviewService;
     }
 
+    // TODO(auth): userId брать из SecurityContext, а не из тела
     @PostMapping
     public ResponseEntity<ReviewDto> create(@Valid @RequestBody NewReviewRequest request) {
         return ResponseEntity
@@ -32,32 +30,20 @@ public class ReviewController {
                 .body(reviewService.create(request));
     }
 
+    // TODO(auth): проверять, что отзыв принадлежит текущему пользователю
     @PutMapping
     public ResponseEntity<ReviewDto> update(@Valid @RequestBody UpdateReviewRequest request) {
-        return ResponseEntity
-                .ok(reviewService.update(request));
+        return ResponseEntity.ok(reviewService.update(request));
     }
 
+    // TODO(auth): проверять, что отзыв принадлежит текущему пользователю
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive Long id) {
         reviewService.delete(id);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<ReviewDto> findById(@PathVariable @NotNull @Positive Long id) {
-        return ResponseEntity
-                .ok(reviewService.findById(id));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<ReviewDto>> findAll(
-            @RequestParam(required = false) @Positive Long filmId,
-            @RequestParam(defaultValue = "10") @Positive @Max(100) Integer count) {
-        return ResponseEntity
-                .ok(reviewService.findAll(filmId, count));
-    }
-
+    // TODO(auth): убрать {userId} из пути — брать из SecurityContext
     @PutMapping("/{id}/like/{userId}")
     public ResponseEntity<Void> addLike(@PathVariable @NotNull @Positive Long id,
                                         @PathVariable @NotNull @Positive Long userId) {
@@ -65,6 +51,7 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+    // TODO(auth): убрать {userId} из пути — брать из SecurityContext
     @PutMapping("/{id}/dislike/{userId}")
     public ResponseEntity<Void> addDislike(@PathVariable @NotNull @Positive Long id,
                                            @PathVariable @NotNull @Positive Long userId) {
@@ -72,6 +59,7 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+    // TODO(auth): убрать {userId} из пути — брать из SecurityContext
     @DeleteMapping("/{id}/like/{userId}")
     public ResponseEntity<Void> removeLike(@PathVariable @NotNull @Positive Long id,
                                            @PathVariable @NotNull @Positive Long userId) {
@@ -79,6 +67,7 @@ public class ReviewController {
         return ResponseEntity.noContent().build();
     }
 
+    // TODO(auth): убрать {userId} из пути — брать из SecurityContext
     @DeleteMapping("/{id}/dislike/{userId}")
     public ResponseEntity<Void> removeDislike(@PathVariable @NotNull @Positive Long id,
                                               @PathVariable @NotNull @Positive Long userId) {

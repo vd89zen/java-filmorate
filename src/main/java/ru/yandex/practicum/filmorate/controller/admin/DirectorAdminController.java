@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.controller.admin;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
@@ -12,15 +12,13 @@ import ru.yandex.practicum.filmorate.dto.NewDirectorRequest;
 import ru.yandex.practicum.filmorate.dto.UpdateDirectorRequest;
 import ru.yandex.practicum.filmorate.service.DirectorService;
 
-import java.util.List;
-
 @Validated
 @RestController
-@RequestMapping("/directors")
-public class DirectorController {
+@RequestMapping("/admin/directors")
+public class DirectorAdminController {
     private final DirectorService directorService;
 
-    public DirectorController(DirectorService directorService) {
+    public DirectorAdminController(DirectorService directorService) {
         this.directorService = directorService;
     }
 
@@ -33,22 +31,14 @@ public class DirectorController {
 
     @PutMapping
     public ResponseEntity<DirectorDto> update(@Valid @RequestBody UpdateDirectorRequest request) {
-        return ResponseEntity.ok(directorService.update(request));
+        return ResponseEntity
+                .ok(directorService.update(request));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive Long id) {
         directorService.delete(id);
-        return ResponseEntity.noContent().build();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<DirectorDto> findById(@PathVariable @NotNull @Positive Long id) {
-        return ResponseEntity.ok(directorService.findById(id));
-    }
-
-    @GetMapping
-    public ResponseEntity<List<DirectorDto>> findAll() {
-        return ResponseEntity.ok(directorService.findAll());
+        return ResponseEntity
+                .noContent().build();
     }
 }
