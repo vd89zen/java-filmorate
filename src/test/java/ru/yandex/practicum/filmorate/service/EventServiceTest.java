@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -41,9 +42,8 @@ class EventServiceTest {
     @BeforeEach
     void setUp() {
         cleanUp();
-        userId = userStorage.create(User.builder()
-                .email("user@mail.com").login("user").name("User")
-                .birthday(LocalDate.of(1990, 1, 1)).build()).getId();
+
+        userId = userStorage.create(newTestUser("user@mail.com", "user", "User")).getId();
 
         filmId = filmStorage.create(Film.builder()
                 .name("Film").description("desc")
@@ -64,6 +64,17 @@ class EventServiceTest {
         jdbcTemplate.execute("DELETE FROM film_directors");
         jdbcTemplate.execute("DELETE FROM films");
         jdbcTemplate.execute("DELETE FROM users");
+    }
+
+    private User newTestUser(String email, String login, String name) {
+        return User.builder()
+                .email(email)
+                .login(login)
+                .name(name)
+                .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
+                .build();
     }
 
     @Nested
@@ -131,9 +142,8 @@ class EventServiceTest {
         @Test
         @DisplayName("Возвращает события друзей")
         void getFeedFriends_Should_ReturnFriendsEvents_Test() {
-            Long friendId = userStorage.create(User.builder()
-                    .email("friend@mail.com").login("friend").name("Friend")
-                    .birthday(LocalDate.of(1990, 1, 1)).build()).getId();
+            Long friendId = userStorage.create(
+                    newTestUser("friend@mail.com", "friend", "Friend")).getId();
 
             jdbcTemplate.update("INSERT INTO friendship (user_id, friend_id) VALUES (?, ?)",
                     userId, friendId);

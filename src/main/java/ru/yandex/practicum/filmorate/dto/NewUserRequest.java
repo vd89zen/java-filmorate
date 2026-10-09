@@ -1,10 +1,10 @@
 package ru.yandex.practicum.filmorate.dto;
 
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Past;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import jakarta.validation.constraints.*;
 import lombok.*;
+import ru.yandex.practicum.filmorate.util.TrimDeserializer;
+
 import java.time.LocalDate;
 
 @Data
@@ -14,11 +14,22 @@ import java.time.LocalDate;
 public class NewUserRequest {
     @NotBlank(message = "Не указана электронная почта (email).")
     @Email(message = "Неверный формат адреса электронной почты.")
+    @JsonDeserialize(using = TrimDeserializer.class)
     String email;
+
     @NotBlank(message = "Не указан логин (login).")
     String login;
+
+    @ToString.Exclude
     String name;
+
     @NotNull(message = "Не указана дата рождения.")
     @Past(message = "Дата рождения не может быть в будущем.")
+    @ToString.Exclude
     LocalDate birthday;
+
+    @NotBlank(message = "Не указан пароль.")
+    @Size(min = 6, max = 100, message = "Пароль должен быть от 6 до 100 символов.")
+    @ToString.Exclude
+    String password;
 }

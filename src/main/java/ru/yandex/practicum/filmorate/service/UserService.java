@@ -2,14 +2,12 @@ package ru.yandex.practicum.filmorate.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.filmorate.dal.FriendshipDbStorage;
 import ru.yandex.practicum.filmorate.dal.UserDbStorage;
-import ru.yandex.practicum.filmorate.dto.NewUserRequest;
-import ru.yandex.practicum.filmorate.dto.UpdateUserRequest;
-import ru.yandex.practicum.filmorate.dto.UserDto;
-import ru.yandex.practicum.filmorate.dto.UserShortDto;
+import ru.yandex.practicum.filmorate.dto.*;
 import ru.yandex.practicum.filmorate.mapper.UserMapper;
 import ru.yandex.practicum.filmorate.model.*;
 import ru.yandex.practicum.filmorate.exception.NotFoundException;
@@ -26,6 +24,7 @@ public class UserService {
     private final UserDbStorage userStorage;
     private final FriendshipDbStorage friendshipDbStorage;
     private final EventService eventService;
+    private final PasswordEncoder passwordEncoder;
 
     public void checkUserExists(Long userId) {
         if (userStorage.isUserExists(userId) == false) {
@@ -51,15 +50,25 @@ public class UserService {
         }
 
         User newUser = UserMapper.mapToUser(request);
+        newUser.setPassword(passwordEncoder.encode(request.getPassword()));
         normalizeUser(newUser);
         User savedUser = userStorage.create(newUser);
-        return UserMapper.mapToUserDto(savedUser);
+        User reloaded = userStorage.findById(savedUser.getId())
+                .orElseThrow(() -> new NotFoundException("Не удалось перечитать пользователя после создания."));
+
+        return UserMapper.mapToUserDto(reloaded);
     }
 
     public UserDto findById(Long userId) {
         log.info("Поиск пользователя ID {}.", userId);
         User user = getUserOrThrow(userId);
         return UserMapper.mapToUserDto(user);
+    }
+
+    public UserPublicDto findPublicById(Long userId) {
+        log.info("Поиск публичного профиля пользователя ID {}.", userId);
+        User user = getUserOrThrow(userId);
+        return UserMapper.mapToUserPublicDto(user);
     }
 
     public List<UserDto> findAll(int from, int size) {
@@ -155,19 +164,19 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
-    public List<UserDto> getUserFriends(Long userId) {
+    public List<UserPublicDto> getUserFriends(Long userId) {
         log.info("Получение списка друзей пользователя ID {}.", userId);
         checkUserExists(userId);
         List<User> userFriends = userStorage.findBySeveralIds(friendshipDbStorage.getFriendsIdsOfUser(userId));
         userFriends.sort(Comparator.comparing(User::getId));
 
         return userFriends.stream()
-                .map(UserMapper::mapToUserDto)
+                .map(UserMapper::mapToUserPublicDto)
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public List<UserDto> getCommonFriends(Long userId, Long otherUserId) {
+    public List<UserPublicDto> getCommonFriends(Long userId, Long otherUserId) {
         log.info("Получение списка общих друзей пользователей ID {} и {}.", userId, otherUserId);
         checkUserExists(userId);
         checkUserExists(otherUserId);
@@ -176,7 +185,7 @@ public class UserService {
         );
 
         return commonFriends.stream()
-                .map(UserMapper::mapToUserDto)
+                .map(UserMapper::mapToUserPublicDto)
                 .collect(Collectors.toList());
     }
 

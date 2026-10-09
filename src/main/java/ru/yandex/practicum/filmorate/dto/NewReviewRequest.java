@@ -17,9 +17,5 @@ public class NewReviewRequest {
 
     @NotNull
     @Positive
-    private Long userId;
-
-    @NotNull
-    @Positive
     private Long filmId;
 }

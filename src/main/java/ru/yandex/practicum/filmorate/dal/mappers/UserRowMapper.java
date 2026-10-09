@@ -3,20 +3,25 @@ package ru.yandex.practicum.filmorate.dal.mappers;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Component;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
+
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 
 @Component
 public class UserRowMapper implements RowMapper<User> {
     @Override
-    public User mapRow(ResultSet resultSet, int rowNum) throws SQLException {
-        User user = User.builder()
-                .id(resultSet.getLong("id"))
-                .email(resultSet.getString("email"))
-                .login(resultSet.getString("login"))
-                .name(resultSet.getString("name"))
-                .birthday(resultSet.getDate("birthday").toLocalDate())
+    public User mapRow(ResultSet rs, int rowNum) throws SQLException {
+        return User.builder()
+                .id(rs.getLong("id"))
+                .email(rs.getString("email"))
+                .login(rs.getString("login"))
+                .name(rs.getString("name"))
+                .birthday(rs.getDate("birthday").toLocalDate())
+                .password(rs.getString("password"))
+                .role(Role.valueOf(rs.getString("role")))
+                .createdAt(rs.getObject("created_at", LocalDateTime.class))
                 .build();
-        return user;
     }
 }

@@ -32,22 +32,21 @@ public class ReviewService {
     private final EventService eventService;
 
     @Transactional
-    public ReviewDto create(NewReviewRequest request) {
-        log.info("ReviewService: создание отзыва {}", request);
+    public ReviewDto create(NewReviewRequest request, Long userId) {
+        log.info("ReviewService: создание отзыва пользователем {}", userId);
 
-        userService.checkUserExists(request.getUserId());
+        userService.checkUserExists(userId);
         filmService.checkFilmExists(request.getFilmId());
 
-        if (reviewStorage.isReviewExistsByUserAndFilm(request.getUserId(), request.getFilmId())) {
+        if (reviewStorage.isReviewExistsByUserAndFilm(userId, request.getFilmId())) {
             throw new ValidationException(ValidationError.builder()
                     .field("review")
                     .message("Пользователь уже оставил отзыв на этот фильм.")
-                    .rejectedValue(String.format("userId=%d, filmId=%d",
-                            request.getUserId(), request.getFilmId()))
+                    .rejectedValue(String.format("userId=%d, filmId=%d", userId, request.getFilmId()))
                     .build());
         }
 
-        Review review = ReviewMapper.mapToReview(request);
+        Review review = ReviewMapper.mapToReview(request, userId);
         Review saved = reviewStorage.create(review);
 
         eventService.addEvent(
@@ -57,8 +56,8 @@ public class ReviewService {
     }
 
     @Transactional
-    public ReviewDto update(UpdateReviewRequest request) {
-        log.info("ReviewService: обновление отзыва {}", request);
+    public ReviewDto update(UpdateReviewRequest request, Long userId) {
+        log.info("ReviewService: обновление отзыва {} пользователем {}", request, userId);
 
         if (!request.hasContent() && !request.hasIsPositive()) {
             throw new ValidationException(ValidationError.builder()
@@ -77,6 +76,7 @@ public class ReviewService {
         }
 
         Review review = getReviewOrThrow(request.getReviewId());
+        checkOwnership(review, userId);
 
         ReviewMapper.updateReviewFields(review, request);
         reviewStorage.update(review);
@@ -88,10 +88,12 @@ public class ReviewService {
     }
 
     @Transactional
-    public void delete(Long reviewId) {
-        log.info("ReviewService: удаление отзыва ID {}", reviewId);
+    public void delete(Long reviewId, Long userId) {
+        log.info("ReviewService: удаление отзыва ID {} пользователем {}", reviewId, userId);
 
         Review review = getReviewOrThrow(reviewId);
+        checkOwnership(review, userId);
+
         reviewStorage.delete(reviewId);
 
         eventService.addEvent(
@@ -127,7 +129,6 @@ public class ReviewService {
             return Map.of();
         }
 
-        // Один batch-запрос за фильмами
         Set<Long> filmIds = reviews.stream()
                 .map(Review::getFilmId)
                 .collect(Collectors.toSet());
@@ -197,5 +198,13 @@ public class ReviewService {
     private Review getReviewOrThrow(Long reviewId) {
         return reviewStorage.findById(reviewId)
                 .orElseThrow(() -> new NotFoundException(String.format(REVIEW_NOT_FOUND, reviewId)));
+    }
+
+    private void checkOwnership(Review review, Long userId) {
+        if (!review.getUserId().equals(userId)) {
+            log.warn("ReviewService: пользователь {} пытался изменить чужой отзыв {}",
+                    userId, review.getReviewId());
+            throw new NotFoundException(String.format("У пользователя ID %d не найден отзыв ID %d", userId, review.getReviewId()));
+        }
     }
 }

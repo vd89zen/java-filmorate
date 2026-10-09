@@ -59,6 +59,7 @@ class FilmServiceTest {
         r.setLogin(login);
         r.setName(login);
         r.setBirthday(LocalDate.of(1990, 1, 1));
+        r.setPassword("secret123");
         return r;
     }
 

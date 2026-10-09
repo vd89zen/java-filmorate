@@ -10,6 +10,7 @@ import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.Review;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -62,8 +63,13 @@ class ReviewDbStorageTest {
 
     private Long createUser(String email, String name) {
         return userStorage.create(User.builder()
-                .email(email).login(email).name(name)
-                .birthday(LocalDate.of(1990, 1, 1)).build()).getId();
+                .email(email)
+                .login(email)
+                .name(name)
+                .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
+                .build()).getId();
     }
 
     private Long createFilm(String name) {

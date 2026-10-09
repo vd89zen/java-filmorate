@@ -15,6 +15,7 @@ import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -49,6 +50,8 @@ class EventDbStorageTest {
                 .login("login1")
                 .name("User1")
                 .birthday(LocalDate.of(1991, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         user1Id = userDbStorage.create(user1).getId();
 
@@ -58,6 +61,8 @@ class EventDbStorageTest {
                 .login("login2")
                 .name("User2")
                 .birthday(LocalDate.of(1991, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         user2Id = userDbStorage.create(user2).getId();
 
@@ -67,6 +72,8 @@ class EventDbStorageTest {
                 .login("login3")
                 .name("User3")
                 .birthday(LocalDate.of(1991, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         user3Id = userDbStorage.create(user3).getId();
 
