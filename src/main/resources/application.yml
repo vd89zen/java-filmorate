@@ -28,3 +28,6 @@ app:
     name: ${ADMIN_NAME:Administrator}
     birthday: ${ADMIN_BIRTHDAY:1990-01-01}
     password: ${ADMIN_PASSWORD:admin123}
+  jwt:
+    secret: ${JWT_SECRET:ZmlsbW9yYXRlLXNlY3JldC1rZXktZm9yLWp3dC1zaWduaW5nLW1pbi0zMi1ieXRlcy1sb25n}
+    expirationMinutes: 60
