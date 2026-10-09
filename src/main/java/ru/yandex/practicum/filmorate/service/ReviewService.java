@@ -32,22 +32,21 @@ public class ReviewService {
     private final EventService eventService;
 
     @Transactional
-    public ReviewDto create(NewReviewRequest request) {
-        log.info("ReviewService: создание отзыва {}", request);
+    public ReviewDto create(NewReviewRequest request, Long userId) {
+        log.info("ReviewService: создание отзыва пользователем {}", userId);
 
-        userService.checkUserExists(request.getUserId());
+        userService.checkUserExists(userId);
         filmService.checkFilmExists(request.getFilmId());
 
-        if (reviewStorage.isReviewExistsByUserAndFilm(request.getUserId(), request.getFilmId())) {
+        if (reviewStorage.isReviewExistsByUserAndFilm(userId, request.getFilmId())) {
             throw new ValidationException(ValidationError.builder()
                     .field("review")
                     .message("Пользователь уже оставил отзыв на этот фильм.")
-                    .rejectedValue(String.format("userId=%d, filmId=%d",
-                            request.getUserId(), request.getFilmId()))
+                    .rejectedValue(String.format("userId=%d, filmId=%d", userId, request.getFilmId()))
                     .build());
         }
 
-        Review review = ReviewMapper.mapToReview(request);
+        Review review = ReviewMapper.mapToReview(request, userId);
         Review saved = reviewStorage.create(review);
 
         eventService.addEvent(

@@ -10,11 +10,11 @@ import ru.yandex.practicum.filmorate.model.Review;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class ReviewMapper {
 
-    public static Review mapToReview(NewReviewRequest request) {
+    public static Review mapToReview(NewReviewRequest request, Long userId) {
         return Review.builder()
                 .content(request.getContent())
                 .isPositive(request.getIsPositive())
-                .userId(request.getUserId())
+                .userId(userId)
                 .filmId(request.getFilmId())
                 .useful(0)
                 .build();
