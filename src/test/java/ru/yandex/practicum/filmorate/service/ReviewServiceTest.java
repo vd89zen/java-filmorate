@@ -154,7 +154,7 @@ class ReviewServiceTest {
             request.setReviewId(created.getReviewId());
             request.setContent("new");
 
-            ReviewDto updated = reviewService.update(request);
+            ReviewDto updated = reviewService.update(request, user1Id);
 
             assertThat(updated.getContent()).isEqualTo("new");
             assertThat(updated.getIsPositive()).isTrue();
@@ -169,7 +169,7 @@ class ReviewServiceTest {
             request.setReviewId(created.getReviewId());
             request.setIsPositive(false);
 
-            ReviewDto updated = reviewService.update(request);
+            ReviewDto updated = reviewService.update(request, user1Id);
 
             assertThat(updated.getContent()).isEqualTo("old");
             assertThat(updated.getIsPositive()).isFalse();
@@ -185,7 +185,7 @@ class ReviewServiceTest {
             request.setContent("new");
             request.setIsPositive(false);
 
-            ReviewDto updated = reviewService.update(request);
+            ReviewDto updated = reviewService.update(request, user1Id);
 
             assertThat(updated.getContent()).isEqualTo("new");
             assertThat(updated.getIsPositive()).isFalse();
@@ -198,7 +198,7 @@ class ReviewServiceTest {
             request.setReviewId(999L);
             request.setContent("new");
 
-            assertThatThrownBy(() -> reviewService.update(request))
+            assertThatThrownBy(() -> reviewService.update(request, user1Id))
                     .isInstanceOf(NotFoundException.class);
         }
 
@@ -210,7 +210,7 @@ class ReviewServiceTest {
             UpdateReviewRequest request = new UpdateReviewRequest();
             request.setReviewId(created.getReviewId());
 
-            assertThatThrownBy(() -> reviewService.update(request))
+            assertThatThrownBy(() -> reviewService.update(request, user1Id))
                     .isInstanceOf(ValidationException.class);
         }
     }
@@ -224,7 +224,7 @@ class ReviewServiceTest {
         void delete_Should_RemoveReview_AndAddEvent_Test() {
             ReviewDto created = reviewService.create(newRequest(filmId, "x", true), user1Id);
 
-            reviewService.delete(created.getReviewId());
+            reviewService.delete(created.getReviewId(), user1Id);
 
             assertThat(reviewStorage.findById(created.getReviewId())).isEmpty();
 
@@ -238,7 +238,7 @@ class ReviewServiceTest {
         @Test
         @DisplayName("Удаление несуществующего → NotFoundException")
         void delete_Should_ThrowNotFoundException_ForNonExistingReview_Test() {
-            assertThatThrownBy(() -> reviewService.delete(999L))
+            assertThatThrownBy(() -> reviewService.delete(999L, user1Id))
                     .isInstanceOf(NotFoundException.class);
         }
     }

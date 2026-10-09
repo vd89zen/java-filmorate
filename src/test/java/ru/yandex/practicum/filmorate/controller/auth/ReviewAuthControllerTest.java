@@ -35,9 +35,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("ReviewController Тесты (аутентифицированные эндпоинты)")
 class ReviewAuthControllerTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private final UserDbStorage userStorage;
     private final FilmDbStorage filmStorage;
@@ -252,6 +257,22 @@ class ReviewAuthControllerTest {
                             .content(objectMapper.writeValueAsString(request)))
                     .andExpect(status().isUnauthorized());
         }
+
+        @Test
+        @DisplayName("Обновление чужого отзыва → 404")
+        void update_Should_ReturnNotFound_ForAnotherUsersReview_Test() throws Exception {
+            Long reviewId = createReview(film1Id, "x", true);
+
+            UpdateReviewRequest request = new UpdateReviewRequest();
+            request.setReviewId(reviewId);
+            request.setContent("hacked");
+
+            mockMvc.perform(put("/me/reviews")
+                            .with(user(user2Principal))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNotFound());
+        }
     }
 
     @Nested
@@ -281,6 +302,20 @@ class ReviewAuthControllerTest {
         void delete_Should_ReturnUnauthorized_WithoutAuth_Test() throws Exception {
             mockMvc.perform(delete("/me/reviews/{id}", 1L))
                     .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("Удаление чужого отзыва → 404")
+        void delete_Should_ReturnNotFound_ForAnotherUsersReview_Test() throws Exception {
+            Long reviewId = createReview(film1Id, "x", true);
+
+            mockMvc.perform(delete("/me/reviews/{id}", reviewId)
+                            .with(user(user2Principal)))
+                    .andExpect(status().isNotFound());
+
+            mockMvc.perform(get("/reviews/{id}", reviewId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.reviewId").value(reviewId));
         }
     }
 

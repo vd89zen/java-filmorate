@@ -32,17 +32,17 @@ public class ReviewAuthController {
                 .body(reviewService.create(request, principal.getId()));
     }
 
-    // TODO(auth): проверять, что отзыв принадлежит текущему пользователю
     @PutMapping
-    public ResponseEntity<ReviewDto> update(@Valid @RequestBody UpdateReviewRequest request) {
+    public ResponseEntity<ReviewDto> update(@Valid @RequestBody UpdateReviewRequest request,
+                                            @AuthenticationPrincipal UserPrincipal principal) {
         return ResponseEntity
-                .ok(reviewService.update(request));
+                .ok(reviewService.update(request, principal.getId()));
     }
 
-    // TODO(auth): проверять, что отзыв принадлежит текущему пользователю
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive Long id) {
-        reviewService.delete(id);
+    public ResponseEntity<Void> delete(@PathVariable @NotNull @Positive Long id,
+                                       @AuthenticationPrincipal UserPrincipal principal) {
+        reviewService.delete(id, principal.getId());
         return ResponseEntity
                 .noContent().build();
     }
