@@ -18,6 +18,7 @@ import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.EventTypes;
 import ru.yandex.practicum.filmorate.model.enums.OperationTypes;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -64,6 +65,7 @@ class FeedServiceTest {
         jdbcTemplate.execute("DELETE FROM friendship");
         jdbcTemplate.execute("DELETE FROM film_likes");
         jdbcTemplate.execute("DELETE FROM film_genres");
+        jdbcTemplate.execute("DELETE FROM film_directors");
         jdbcTemplate.execute("DELETE FROM review_opinions");
         jdbcTemplate.execute("DELETE FROM reviews");
         jdbcTemplate.execute("DELETE FROM films");
@@ -76,6 +78,8 @@ class FeedServiceTest {
                 .login(email)
                 .name(name)
                 .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         return userDbStorage.create(user).getId();
     }
@@ -180,12 +184,11 @@ class FeedServiceTest {
         @DisplayName("REVIEW-событие обогащается ReviewShortDto, film и user == null")
         void reviewEvent_EnrichedWithReview_Test() {
             NewReviewRequest request = new NewReviewRequest();
-            request.setUserId(user1Id);
             request.setFilmId(filmId);
             request.setContent("bad film");
             request.setIsPositive(false);
 
-            ReviewDto created = reviewService.create(request);
+            ReviewDto created = reviewService.create(request, user1Id);
 
             List<EnrichedEventDto> feed = feedService.getEnrichedFeedUser(user1Id);
 

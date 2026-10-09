@@ -48,6 +48,7 @@ class UserServiceTest {
         r.setLogin(login);
         r.setName(login);
         r.setBirthday(LocalDate.of(1990, 1, 1));
+        r.setPassword("secret123");
         return r;
     }
 
@@ -162,7 +163,7 @@ class UserServiceTest {
             userService.addFriend(u2, common);
 
             assertThat(userService.getCommonFriends(u1, u2))
-                    .extracting(UserDto::getId)
+                    .extracting(UserPublicDto::getId)
                     .containsExactly(common);
         }
     }

@@ -11,6 +11,7 @@ import ru.yandex.practicum.filmorate.dto.SearchRequest;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -40,11 +41,21 @@ class FilmDbStorageTest {
         cleanUp();
 
         userId1 = userStorage.create(User.builder()
-                .email("search1@mail.com").login("search1").name("Search1")
-                .birthday(LocalDate.of(1990, 1, 1)).build()).getId();
+                .email("search1@mail.com")
+                .login("search1")
+                .name("Search1")
+                .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
+                .build()).getId();
         userId2 = userStorage.create(User.builder()
-                .email("search2@mail.com").login("search2").name("Search2")
-                .birthday(LocalDate.of(1990, 1, 1)).build()).getId();
+                .email("search2@mail.com")
+                .login("search2")
+                .name("Search2")
+                .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
+                .build()).getId();
     }
 
     @AfterEach

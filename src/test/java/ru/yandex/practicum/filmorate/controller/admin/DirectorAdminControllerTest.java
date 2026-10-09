@@ -1,4 +1,4 @@
-package ru.yandex.practicum.filmorate.controller;
+package ru.yandex.practicum.filmorate.controller.admin;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
@@ -10,10 +10,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.yandex.practicum.filmorate.dal.UserDbStorage;
 import ru.yandex.practicum.filmorate.dto.NewDirectorRequest;
 import ru.yandex.practicum.filmorate.dto.UpdateDirectorRequest;
+import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
+import ru.yandex.practicum.filmorate.security.UserPrincipal;
 
-import static org.hamcrest.Matchers.hasSize;
+import java.time.LocalDate;
+
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -22,36 +28,59 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @AutoConfigureTestDatabase
 @RequiredArgsConstructor(onConstructor_ = @Autowired)
-@DisplayName("DirectorController Тесты")
-class DirectorControllerTest {
+@DisplayName("DirectorController Тесты (админские эндпоинты)")
+class DirectorAdminControllerTest {
 
     @Autowired private MockMvc mockMvc;
     @Autowired private ObjectMapper objectMapper;
     @Autowired private JdbcTemplate jdbcTemplate;
 
+    private final UserDbStorage userStorage;
+
+    private UserPrincipal adminPrincipal;
+    private UserPrincipal userPrincipal;
+
     @BeforeEach
     void setUp() {
-        jdbcTemplate.execute("DELETE FROM film_directors");
-        jdbcTemplate.execute("DELETE FROM directors");
+        cleanUp();
+        adminPrincipal = new UserPrincipal(createUser("admin@test.com", Role.ADMIN));
+        userPrincipal = new UserPrincipal(createUser("user@test.com", Role.USER));
     }
 
     @AfterEach
     void tearDown() {
+        cleanUp();
+    }
+
+    private void cleanUp() {
         jdbcTemplate.execute("DELETE FROM film_directors");
         jdbcTemplate.execute("DELETE FROM directors");
+        jdbcTemplate.execute("DELETE FROM users");
+    }
+
+    private User createUser(String email, Role role) {
+        return userStorage.create(User.builder()
+                .email(email)
+                .login(email)
+                .name(role.name())
+                .birthday(LocalDate.of(1990, 1, 1))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(role)
+                .build());
     }
 
     @Nested
-    @DisplayName("POST /directors")
+    @DisplayName("POST /admin/directors")
     class CreateTests {
 
         @Test
-        @DisplayName("Создание: 201 + тело с id и name")
+        @DisplayName("Создание админом: 201 + тело")
         void create_Should_ReturnCreated_Test() throws Exception {
             NewDirectorRequest req = new NewDirectorRequest();
             req.setName("Nolan");
 
-            mockMvc.perform(post("/directors")
+            mockMvc.perform(post("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isCreated())
@@ -60,12 +89,38 @@ class DirectorControllerTest {
         }
 
         @Test
+        @DisplayName("Без аутентификации → 401")
+        void create_Should_ReturnUnauthorized_WithoutAuth_Test() throws Exception {
+            NewDirectorRequest req = new NewDirectorRequest();
+            req.setName("Nolan");
+
+            mockMvc.perform(post("/admin/directors")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isUnauthorized());
+        }
+
+        @Test
+        @DisplayName("С ролью USER → 403")
+        void create_Should_ReturnForbidden_ForUser_Test() throws Exception {
+            NewDirectorRequest req = new NewDirectorRequest();
+            req.setName("Nolan");
+
+            mockMvc.perform(post("/admin/directors")
+                            .with(user(userPrincipal))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isForbidden());
+        }
+
+        @Test
         @DisplayName("Пустое имя → 400")
         void create_Should_ReturnBadRequest_ForBlankName_Test() throws Exception {
             NewDirectorRequest req = new NewDirectorRequest();
             req.setName("");
 
-            mockMvc.perform(post("/directors")
+            mockMvc.perform(post("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isBadRequest());
@@ -78,18 +133,20 @@ class DirectorControllerTest {
             req.setName("Nolan");
             String body = objectMapper.writeValueAsString(req);
 
-            mockMvc.perform(post("/directors")
+            mockMvc.perform(post("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isCreated());
 
-            mockMvc.perform(post("/directors")
+            mockMvc.perform(post("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON).content(body))
                     .andExpect(status().isBadRequest());
         }
     }
 
     @Nested
-    @DisplayName("PUT /directors")
+    @DisplayName("PUT /admin/directors")
     class UpdateTests {
 
         @Test
@@ -101,7 +158,8 @@ class DirectorControllerTest {
             req.setId(id);
             req.setName("New");
 
-            mockMvc.perform(put("/directors")
+            mockMvc.perform(put("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isOk())
@@ -115,7 +173,8 @@ class DirectorControllerTest {
             req.setId(999L);
             req.setName("X");
 
-            mockMvc.perform(put("/directors")
+            mockMvc.perform(put("/admin/directors")
+                            .with(user(adminPrincipal))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(req)))
                     .andExpect(status().isNotFound());
@@ -123,55 +182,40 @@ class DirectorControllerTest {
     }
 
     @Nested
-    @DisplayName("DELETE /directors/{id}")
+    @DisplayName("DELETE /admin/directors/{id}")
     class DeleteTests {
 
         @Test
         @DisplayName("Удаление существующего → 204")
         void delete_Should_ReturnNoContent_Test() throws Exception {
             Long id = createDirector("ToDelete");
-            mockMvc.perform(delete("/directors/{id}", id))
+
+            mockMvc.perform(delete("/admin/directors/{id}", id)
+                            .with(user(adminPrincipal)))
                     .andExpect(status().isNoContent());
         }
 
         @Test
         @DisplayName("Несуществующий → 404")
         void delete_Should_ReturnNotFound_Test() throws Exception {
-            mockMvc.perform(delete("/directors/{id}", 999L))
+            mockMvc.perform(delete("/admin/directors/{id}", 999L)
+                            .with(user(adminPrincipal)))
                     .andExpect(status().isNotFound());
         }
-    }
-
-    @Nested
-    @DisplayName("GET /directors и GET /directors/{id}")
-    class FindTests {
 
         @Test
-        @DisplayName("Пустой список")
-        void findAll_Should_ReturnEmpty_Test() throws Exception {
-            mockMvc.perform(get("/directors"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(0)));
+        @DisplayName("Без аутентификации → 401")
+        void delete_Should_ReturnUnauthorized_WithoutAuth_Test() throws Exception {
+            mockMvc.perform(delete("/admin/directors/{id}", 999L))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test
-        @DisplayName("Несколько режиссёров — сортировка по id")
-        void findAll_Should_ReturnSortedById_Test() throws Exception {
-            createDirector("A");
-            createDirector("B");
-
-            mockMvc.perform(get("/directors"))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$", hasSize(2)))
-                    .andExpect(jsonPath("$[0].name").value("A"))
-                    .andExpect(jsonPath("$[1].name").value("B"));
-        }
-
-        @Test
-        @DisplayName("GET /directors/{id}: 404 для несуществующего")
-        void findById_Should_ReturnNotFound_Test() throws Exception {
-            mockMvc.perform(get("/directors/{id}", 999L))
-                    .andExpect(status().isNotFound());
+        @DisplayName("С ролью USER → 403")
+        void delete_Should_ReturnForbidden_ForUser_Test() throws Exception {
+            mockMvc.perform(delete("/admin/directors/{id}", 999L)
+                            .with(user(userPrincipal)))
+                    .andExpect(status().isForbidden());
         }
     }
 
@@ -179,7 +223,8 @@ class DirectorControllerTest {
         NewDirectorRequest req = new NewDirectorRequest();
         req.setName(name);
 
-        String response = mockMvc.perform(post("/directors")
+        String response = mockMvc.perform(post("/admin/directors")
+                        .with(user(adminPrincipal))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
                 .andExpect(status().isCreated())

@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             }
-        } catch (JwtException | UsernameNotFoundException e) {
+        } catch (JwtException | UsernameNotFoundException | IllegalArgumentException e) {
             log.warn("Невалидный JWT-токен: {}", e.getMessage());
         }
 

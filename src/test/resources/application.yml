@@ -1,0 +1,9 @@
+spring:
+  profiles:
+    active: test
+
+app:
+  jwt:
+    # Base64, декодируется в 48 байт — с запасом хватает для HS256
+    secret: dGVzdC1zZWNyZXQta2V5LXRlc3Qtc2VjcmV0LWtleS10ZXN0LXNlY3JldC1rZXk=
+    expiration-minutes: 60

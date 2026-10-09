@@ -7,6 +7,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
+
 import java.time.LocalDate;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -59,6 +61,8 @@ class FriendshipDbStorageTest {
                 .login("testLogin")
                 .name("testName")
                 .birthday(LocalDate.now().minusYears(17))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         return userStorage.create(user).getId();
     }

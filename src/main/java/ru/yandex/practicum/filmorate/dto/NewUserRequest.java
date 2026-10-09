@@ -1,7 +1,10 @@
 package ru.yandex.practicum.filmorate.dto;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import ru.yandex.practicum.filmorate.util.TrimDeserializer;
+
 import java.time.LocalDate;
 
 @Data
@@ -11,6 +14,7 @@ import java.time.LocalDate;
 public class NewUserRequest {
     @NotBlank(message = "Не указана электронная почта (email).")
     @Email(message = "Неверный формат адреса электронной почты.")
+    @JsonDeserialize(using = TrimDeserializer.class)
     String email;
 
     @NotBlank(message = "Не указан логин (login).")

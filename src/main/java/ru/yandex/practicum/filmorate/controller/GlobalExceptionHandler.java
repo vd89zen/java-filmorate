@@ -4,9 +4,11 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -26,8 +28,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({MethodArgumentNotValidException.class})
     public ErrorResponse handleMethodArgumentNotValidException(MethodArgumentNotValidException exception) {
         List<ValidationError> errors = exception.getBindingResult().getFieldErrors().stream()
-                    .map(this::extractValidationError)
-                    .collect(Collectors.toList());
+                .map(this::extractValidationError)
+                .collect(Collectors.toList());
 
         log.warn("Произошла ошибка валидации (MethodArgumentNotValid): {}", errors);
         return new ErrorResponse(errors);
@@ -45,7 +47,8 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({NotFoundException.class})
     public ErrorResponse handleNotFoundException(NotFoundException exception) {
         log.warn("Ресурс не найден: {}", exception.getMessage());
-        List<ValidationError> errors = Collections.singletonList(new ValidationError(null, exception.getMessage(), null));
+        List<ValidationError> errors = Collections.singletonList(
+                new ValidationError(null, exception.getMessage(), null));
         return new ErrorResponse(errors);
     }
 
@@ -68,12 +71,7 @@ public class GlobalExceptionHandler {
     public ErrorResponse handleMethodNotSupported(HttpRequestMethodNotSupportedException exception) {
         log.warn("Неподдерживаемый HTTP-метод: {}", exception.getMessage());
         List<ValidationError> errors = Collections.singletonList(
-                new ValidationError(
-                        "method",
-                        exception.getMessage(),
-                        exception.getMethod()
-                )
-        );
+                new ValidationError("method", exception.getMessage(), exception.getMethod()));
         return new ErrorResponse(errors);
     }
 
@@ -95,6 +93,27 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(errors);
     }
 
+    @ResponseStatus(HttpStatus.UNAUTHORIZED)
+    @ExceptionHandler({AuthenticationException.class})
+    public ErrorResponse handleAuthenticationException(AuthenticationException exception) {
+        log.warn("Ошибка аутентификации: {}", exception.getMessage());
+        List<ValidationError> errors = Collections.singletonList(
+                new ValidationError(null, exception.getMessage(), null));
+        return new ErrorResponse(errors);
+    }
+
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    @ExceptionHandler({MissingServletRequestParameterException.class})
+    public ErrorResponse handleMissingServletRequestParameter(MissingServletRequestParameterException exception) {
+        log.warn("Отсутствует обязательный параметр: {}", exception.getMessage());
+        List<ValidationError> errors = Collections.singletonList(
+                new ValidationError(
+                        exception.getParameterName(),
+                        "Обязательный параметр не указан",
+                        null));
+        return new ErrorResponse(errors);
+    }
+
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     @ExceptionHandler(Exception.class)
     public ErrorResponse handleException(Exception exception) {
@@ -110,5 +129,4 @@ public class GlobalExceptionHandler {
                 fieldError.getRejectedValue()
         );
     }
-
 }

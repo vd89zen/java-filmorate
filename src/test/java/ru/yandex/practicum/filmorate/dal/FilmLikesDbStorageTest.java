@@ -9,6 +9,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
+
 import java.time.LocalDate;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -76,6 +78,8 @@ class FilmLikesDbStorageTest {
                 .login("testLogin")
                 .name("testName")
                 .birthday(LocalDate.now().minusYears(17))
+                .password("$2a$10$abcdefghijklmnopqrstuv")
+                .role(Role.USER)
                 .build();
         return userStorage.create(user).getId();
     }

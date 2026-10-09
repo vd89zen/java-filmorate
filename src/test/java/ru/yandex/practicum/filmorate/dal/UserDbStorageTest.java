@@ -7,6 +7,8 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.model.User;
+import ru.yandex.practicum.filmorate.model.enums.Role;
+
 import java.time.LocalDate;
 import java.util.*;
 import static org.assertj.core.api.Assertions.*;
@@ -46,7 +48,36 @@ class UserDbStorageTest {
                 .login("testLogin")
                 .name("testName")
                 .birthday(LocalDate.now().minusYears(17))
+                .password("$2a$10$abcdefghijklmnopqrstuv")  // любой непустой хеш
+                .role(Role.USER)
                 .build();
+    }
+
+    @Nested
+    @DisplayName("Тесты role и password")
+    class RolePasswordTests {
+
+        @Test
+        @DisplayName("Создание с ролью ADMIN сохраняет её")
+        void create_Should_SaveAdminRole_Test() {
+            User admin = createTestUser("admin@test.com");
+            admin.setRole(Role.ADMIN);
+            User saved = storage.create(admin);
+
+            assertThat(storage.findById(saved.getId()))
+                    .get()
+                    .hasFieldOrPropertyWithValue("role", Role.ADMIN);
+        }
+
+        @Test
+        @DisplayName("Пароль сохраняется и возвращается")
+        void create_Should_SavePassword_Test() {
+            User saved = storage.create(createTestUser("pwd@test.com"));
+
+            assertThat(storage.findById(saved.getId()))
+                    .get()
+                    .hasFieldOrPropertyWithValue("password", "$2a$10$abcdefghijklmnopqrstuv");
+        }
     }
 
     @Nested
@@ -118,6 +149,8 @@ class UserDbStorageTest {
                     .login("login")
                     .name("name")
                     .birthday(LocalDate.now().minusYears(9))
+                    .password("$2a$10$abcdefghijklmnopqrstuv")
+                    .role(Role.USER)
                     .build();
             // when, then
             assertThatThrownBy(() -> storage.update(nonExists))
