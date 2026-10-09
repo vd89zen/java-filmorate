@@ -80,6 +80,11 @@ public class UserDbStorage extends BaseDbStorage<User> {
         return findOne(FIND_USER_BY_ID_QUERY, userId);
     }
 
+    /**
+     * Ищет пользователя по email.
+     * <p>Ожидает, что email уже нормализован (нижний регистр).
+     * См. {@code UserService.normalizeCredential}.
+     */
     public Optional<User> findByEmail(String email) {
         return findOne(FIND_BY_EMAIL_QUERY, email);
     }
