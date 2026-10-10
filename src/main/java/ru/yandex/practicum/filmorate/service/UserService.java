@@ -119,6 +119,18 @@ public class UserService {
         return UserMapper.mapToUserDto(user);
     }
 
+    @Transactional
+    public void resetPassword(Long userId, String rawPassword) {
+        log.info("UserService: сброс пароля пользователя ID {}.", userId);
+
+        checkUserExists(userId);
+
+        String passwordHash = passwordEncoder.encode(rawPassword);
+        userStorage.updatePassword(userId, passwordHash);
+
+        log.info("UserService: пароль пользователя ID {} обновлён.", userId);
+    }
+
     public void delete(Long userId) {
         log.info("Удаление пользователя ID {}.", userId);
         if (userStorage.delete(userId) == false) {
