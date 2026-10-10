@@ -1,5 +1,6 @@
 package ru.yandex.practicum.filmorate.controller.admin;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -7,12 +8,12 @@ import jakarta.validation.constraints.PositiveOrZero;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.filmorate.dto.UpdatePasswordRequest;
 import ru.yandex.practicum.filmorate.dto.UserDto;
 import ru.yandex.practicum.filmorate.service.UserService;
 
 import java.util.Collection;
 
-//TODO добавить админу возможность сброса пароля пользователя (уточнить - возможно это в секурити есть, тогда тут не надо)
 @Validated
 @RestController
 @RequestMapping("/admin/users")
@@ -28,6 +29,14 @@ public class UserAdminController {
             @RequestParam(defaultValue = "0") @PositiveOrZero int from,
             @RequestParam(defaultValue = "10") @Positive @Max(100) int size) {
         return ResponseEntity.ok(userService.findAll(from, size));
+    }
+
+    @PutMapping("/{userId}/password")
+    public ResponseEntity<Void> resetPassword(
+            @PathVariable @NotNull @Positive Long userId,
+            @Valid @RequestBody UpdatePasswordRequest request) {
+        userService.resetPassword(userId, request.getPassword());
+        return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{userId}")

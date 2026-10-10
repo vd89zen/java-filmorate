@@ -41,6 +41,11 @@ public class UserDbStorage extends BaseDbStorage<User> {
         SET email = ?, login = ?, name = ?, birthday = ?, password = ?
         WHERE id = ?
         """;
+    private static final String UPDATE_PASSWORD_QUERY = """
+        UPDATE users
+        SET password = ?
+        WHERE id = ?
+        """;
 
     private final NamedParameterJdbcTemplate namedJdbc;
 
@@ -70,6 +75,10 @@ public class UserDbStorage extends BaseDbStorage<User> {
                 updatingUser.getBirthday(),
                 updatingUser.getPassword(),
                 updatingUser.getId());
+    }
+
+    public void updatePassword(Long userId, String passwordHash) {
+        update(UPDATE_PASSWORD_QUERY, passwordHash, userId);
     }
 
     public List<User> findAll(int from, int size) {

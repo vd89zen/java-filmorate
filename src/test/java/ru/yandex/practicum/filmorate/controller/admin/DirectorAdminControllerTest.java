@@ -31,9 +31,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("DirectorController Тесты (админские эндпоинты)")
 class DirectorAdminControllerTest {
 
-    @Autowired private MockMvc mockMvc;
-    @Autowired private ObjectMapper objectMapper;
-    @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private final UserDbStorage userStorage;
 
