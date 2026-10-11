@@ -4,6 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.dto.GenreId;
+import ru.yandex.practicum.filmorate.dto.NewGenreRequest;
 import ru.yandex.practicum.filmorate.model.Genre;
 import java.util.List;
 import java.util.Set;
@@ -29,5 +30,9 @@ public final class GenreMapper {
                 genre.getId(),
                 genre.getName()
         );
+    }
+
+    public static Genre mapToGenre(NewGenreRequest request) {
+        return new Genre(null, request.getName());
     }
 }

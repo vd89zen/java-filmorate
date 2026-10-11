@@ -12,8 +12,6 @@ import ru.yandex.practicum.filmorate.dto.GenreDto;
 import ru.yandex.practicum.filmorate.service.GenreService;
 import java.util.List;
 
-//TODO добавить админу возможность добавлять жанры
-
 @Validated
 @RestController
 @RequestMapping("/genres")
