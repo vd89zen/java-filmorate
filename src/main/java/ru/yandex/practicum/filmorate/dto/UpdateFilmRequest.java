@@ -32,12 +32,35 @@ public class UpdateFilmRequest {
     private Set<GenreId> genres;
     private Set<DirectorId> directors;
 
-    public boolean hasName() { return name != null; }
-    public boolean hasDescription() { return description != null; }
-    public boolean hasReleaseDate() { return releaseDate != null; }
-    public boolean hasDuration() { return duration != null; }
-    public boolean hasMpa() { return mpa != null; }
-    public boolean hasRars() { return rars != null; }
-    public boolean hasGenres() { return genres != null; }
-    public boolean hasDirectors() { return directors != null; }
+    public boolean hasName() {
+        return name != null;
+    }
+
+    public boolean hasDescription() {
+        return description != null;
+    }
+
+    public boolean hasReleaseDate() {
+        return releaseDate != null;
+    }
+
+    public boolean hasDuration() {
+        return duration != null;
+    }
+
+    public boolean hasMpa() {
+        return mpa != null;
+    }
+
+    public boolean hasRars() {
+        return rars != null;
+    }
+
+    public boolean hasGenres() {
+        return genres != null;
+    }
+
+    public boolean hasDirectors() {
+        return directors != null;
+    }
 }
