@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.filmorate.dto.FilmDto;
 import ru.yandex.practicum.filmorate.dto.SearchRequest;
 import ru.yandex.practicum.filmorate.service.FilmService;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -63,6 +62,7 @@ public class FilmPublicController {
                                                 @RequestParam(required = false) @Positive Integer durationFrom,
                                                 @RequestParam(required = false) @Positive Integer durationTo,
                                                 @RequestParam(required = false) List<Long> mpaIds,
+                                                @RequestParam(required = false) List<Long> rarsIds,
                                                 @RequestParam(defaultValue = "0") @PositiveOrZero int from,
                                                 @RequestParam(defaultValue = "10") @Positive @Max(100) int size) {
         SearchRequest request = SearchRequest.builder()
@@ -75,11 +75,13 @@ public class FilmPublicController {
                 .durationFrom(durationFrom)
                 .durationTo(durationTo)
                 .mpaIds(mpaIds == null ? Set.of() : new HashSet<>(mpaIds))
+                .rarsIds(rarsIds == null ? Set.of() : new HashSet<>(rarsIds))
                 .from(from)
                 .size(size)
                 .build();
 
-        return ResponseEntity.ok(filmService.search(request));
+        return ResponseEntity
+                .ok(filmService.search(request));
     }
 
     private static Set<String> parseBy(String by) {

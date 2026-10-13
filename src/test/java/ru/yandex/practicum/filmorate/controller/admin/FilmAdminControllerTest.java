@@ -13,10 +13,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.dal.UserDbStorage;
 import ru.yandex.practicum.filmorate.dto.NewFilmRequest;
 import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
+import ru.yandex.practicum.filmorate.dto.RatingRarsId;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.Role;
 import ru.yandex.practicum.filmorate.security.UserPrincipal;
-
 import java.time.LocalDate;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -73,6 +73,17 @@ class FilmAdminControllerTest {
                 .build());
     }
 
+    private Long createFilm(String name) throws Exception {
+        String response = mockMvc.perform(post("/admin/films")
+                        .with(user(adminPrincipal))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(newFilmJson(name)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        return objectMapper.readTree(response).get("id").asLong();
+    }
+
     private String newFilmJson(String name) throws Exception {
         NewFilmRequest r = new NewFilmRequest();
         r.setName(name);
@@ -97,6 +108,42 @@ class FilmAdminControllerTest {
                     .andExpect(status().isCreated())
                     .andExpect(jsonPath("$.id").isNumber())
                     .andExpect(jsonPath("$.name").value("Film"));
+        }
+
+        @Test
+        @DisplayName("Создание только с RARS: 201, mpa == null, rars заполнен")
+        void create_Should_ReturnCreated_ForOnlyRars_Test() throws Exception {
+            NewFilmRequest r = new NewFilmRequest();
+            r.setName("Russian Film");
+            r.setDescription("desc");
+            r.setReleaseDate(LocalDate.of(2000, 1, 1));
+            r.setDuration(120);
+            r.setRars(new RatingRarsId(2L));   // mpa остаётся null
+
+            mockMvc.perform(post("/admin/films")
+                            .with(user(adminPrincipal))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(r)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.id").isNumber())
+                    .andExpect(jsonPath("$.mpa").doesNotExist())
+                    .andExpect(jsonPath("$.rars.id").value(2));
+        }
+
+        @Test
+        @DisplayName("Создание без оба рейтинга → 400 (@AssertTrue)")
+        void create_Should_ReturnBadRequest_WhenNoRatings_Test() throws Exception {
+            NewFilmRequest r = new NewFilmRequest();
+            r.setName("No Ratings");
+            r.setDescription("desc");
+            r.setReleaseDate(LocalDate.of(2000, 1, 1));
+            r.setDuration(120);
+
+            mockMvc.perform(post("/admin/films")
+                            .with(user(adminPrincipal))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(r)))
+                    .andExpect(status().isBadRequest());
         }
 
         @Test
@@ -165,16 +212,5 @@ class FilmAdminControllerTest {
                             .with(user(userPrincipal)))
                     .andExpect(status().isForbidden());
         }
-    }
-
-    private Long createFilm(String name) throws Exception {
-        String response = mockMvc.perform(post("/admin/films")
-                        .with(user(adminPrincipal))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(newFilmJson(name)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        return objectMapper.readTree(response).get("id").asLong();
     }
 }

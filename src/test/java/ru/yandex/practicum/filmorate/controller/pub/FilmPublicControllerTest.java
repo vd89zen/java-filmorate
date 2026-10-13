@@ -10,7 +10,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import ru.yandex.practicum.filmorate.dal.DirectorDbStorage;
 import ru.yandex.practicum.filmorate.model.Director;
-
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -161,6 +160,23 @@ class FilmPublicControllerTest {
         void search_MpaIdsCsv_Should_ReturnOk_Test() throws Exception {
             mockMvc.perform(get("/films/search")
                             .param("mpaIds", "1,2"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("rarsIds=1,2 → 200")
+        void search_RarsIdsCsv_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("rarsIds", "1,2"))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("mpaIds и rarsIds вместе → 200")
+        void search_BothRatingSystems_Should_ReturnOk_Test() throws Exception {
+            mockMvc.perform(get("/films/search")
+                            .param("mpaIds", "1")
+                            .param("rarsIds", "2"))
                     .andExpect(status().isOk());
         }
 

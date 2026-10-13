@@ -2,6 +2,7 @@ package ru.yandex.practicum.filmorate.model;
 
 import lombok.*;
 import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
+import ru.yandex.practicum.filmorate.dto.RatingRarsId;
 import java.time.LocalDate;
 
 @Builder
@@ -16,4 +17,5 @@ public class Film {
     LocalDate releaseDate;
     int duration;
     RatingMpaaId mpa;
+    RatingRarsId rars;
 }

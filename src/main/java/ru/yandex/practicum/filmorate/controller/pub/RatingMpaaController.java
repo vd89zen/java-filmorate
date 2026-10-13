@@ -12,8 +12,6 @@ import ru.yandex.practicum.filmorate.dto.RatingMpaaDto;
 import ru.yandex.practicum.filmorate.service.RatingMpaaService;
 import java.util.List;
 
-//TODO подумать о добавлении рейтинга российского
-
 @Validated
 @RestController
 @RequestMapping("/mpa")

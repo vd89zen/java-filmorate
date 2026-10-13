@@ -38,6 +38,7 @@ public class FilmService {
     private final UserService userService;
     private final GenreService genreService;
     private final RatingMpaaService ratingMpaaService;
+    private final RatingRarsService ratingRarsService;
     private final EventService eventService;
     private final DirectorService directorService;
 
@@ -51,10 +52,15 @@ public class FilmService {
     public FilmDto create(NewFilmRequest request) {
         log.info("Создание нового фильма: {}", request);
         checkDate(request.getReleaseDate());
-        RatingMpaaDto ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(request.getMpa().getId());
+
+        RatingMpaaDto ratingMpaaDto = request.getMpa() == null
+                ? null
+                : ratingMpaaService.getRatingMpaaDtoById(request.getMpa().getId());
+        RatingRarsDto ratingRarsDto = request.getRars() == null
+                ? null
+                : ratingRarsService.getRatingRarsDtoById(request.getRars().getId());
 
         Film newFilm = FilmMapper.mapToFilm(request);
-
         newFilm = filmStorage.create(newFilm);
         Long filmId = newFilm.getId();
 
@@ -79,6 +85,7 @@ public class FilmService {
         }
 
         filmDto.setMpa(ratingMpaaDto);
+        filmDto.setRars(ratingRarsDto);
         filmDto.setLikesCount(getLikesCountOfFilm(filmId));
 
         return filmDto;
@@ -92,15 +99,19 @@ public class FilmService {
             checkDate(request.getReleaseDate());
         }
 
-        RatingMpaaDto ratingMpaaDto = new RatingMpaaDto();
+        // Валидируем присланные рейтинги (если заданы)
+        RatingMpaaDto ratingMpaaDto = null;
         if (request.hasMpa()) {
             ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(request.getMpa().getId());
+        }
+        RatingRarsDto ratingRarsDto = null;
+        if (request.hasRars()) {
+            ratingRarsDto = ratingRarsService.getRatingRarsDtoById(request.getRars().getId());
         }
 
         Long filmId = request.getId();
         Film film = getFilmOrThrow(filmId);
         FilmMapper.updateFilmFields(film, request);
-
         filmStorage.update(film);
 
         FilmDto filmDto = FilmMapper.mapToDto(film);
@@ -125,11 +136,16 @@ public class FilmService {
             directorsDto.forEach(filmDto.getDirectors()::add);
         }
 
-        if (request.hasMpa() == false) {
+        // Если рейтинг не прислан — берём актуальный из film
+        if (request.hasMpa() == false && film.getMpa() != null) {
             ratingMpaaDto = ratingMpaaService.getRatingMpaaDtoById(film.getMpa().getId());
+        }
+        if (request.hasRars() == false && film.getRars() != null) {
+            ratingRarsDto = ratingRarsService.getRatingRarsDtoById(film.getRars().getId());
         }
 
         filmDto.setMpa(ratingMpaaDto);
+        filmDto.setRars(ratingRarsDto);
         filmDto.setLikesCount(getLikesCountOfFilm(filmId));
 
         return filmDto;
@@ -149,8 +165,12 @@ public class FilmService {
                         filmDirectorsDbStorage.getDirectorsOfFilm(filmId))
                 .forEach(filmDto.getDirectors()::add);
 
-        filmDto.setMpa(
-                ratingMpaaService.getRatingMpaaDtoById(film.getMpa().getId()));
+        filmDto.setMpa(film.getMpa() == null
+                ? null
+                : ratingMpaaService.getRatingMpaaDtoById(film.getMpa().getId()));
+        filmDto.setRars(film.getRars() == null
+                ? null
+                : ratingRarsService.getRatingRarsDtoById(film.getRars().getId()));
 
         filmDto.setLikesCount(getLikesCountOfFilm(filmId));
 
@@ -408,12 +428,12 @@ public class FilmService {
             return List.of();
         }
 
-        Set<Long> filmIds = films.stream()
-                .map(Film::getId)
-                .collect(Collectors.toSet());
+        Set<Long> filmIds = films.stream().map(Film::getId).collect(Collectors.toSet());
 
         Map<Long, RatingMpaaDto> mpaDto = ratingMpaaService.findAll().stream()
                 .collect(Collectors.toMap(RatingMpaaDto::getId, r -> r));
+        Map<Long, RatingRarsDto> rarsDto = ratingRarsService.findAll().stream()
+                .collect(Collectors.toMap(RatingRarsDto::getId, r -> r));
         Map<Long, List<Genre>> genres = filmGenresDbStorage.getGenresByFilmsIds(filmIds);
         Map<Long, List<Director>> directors = filmDirectorsDbStorage.getDirectorsByFilmsIds(filmIds);
         Map<Long, Integer> likesCount = filmLikesDbStorage.getLikesCountByFilmsIds(filmIds);
@@ -421,7 +441,12 @@ public class FilmService {
         return films.stream()
                 .map(FilmMapper::mapToDto)
                 .map(filmDto -> {
-                    filmDto.setMpa(mpaDto.get(filmDto.getMpa().getId()));
+                    if (filmDto.getMpa() != null) {
+                        filmDto.setMpa(mpaDto.get(filmDto.getMpa().getId()));
+                    }
+                    if (filmDto.getRars() != null) {
+                        filmDto.setRars(rarsDto.get(filmDto.getRars().getId()));
+                    }
                     GenreMapper.toDtoList(
                             genres.getOrDefault(filmDto.getId(), List.of()))
                             .forEach(filmDto.getGenres()::add);
