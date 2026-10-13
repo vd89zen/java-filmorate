@@ -4,11 +4,11 @@
 
 ## Уровни доступа
 
-| Группа | Эндпоинты | Доступ |
-|---|---|---|
-| Public | `/auth/**`, `GET /films/**`, `GET /directors/**`, `GET /genres/**`, `GET /mpa/**`, `GET /reviews/**`, `POST /users`, `GET /users/{id}` | без аутентификации |
-| Authenticated | `/me/**` | любой залогиненный |
-| Admin | `/admin/**` | роль `ADMIN` |
+| Группа | Эндпоинты                                                                                                                                              | Доступ |
+|---|--------------------------------------------------------------------------------------------------------------------------------------------------------|---|
+| Public | `/auth/**`, `GET /films/**`, `GET /directors/**`, `GET /genres/**`, `GET /mpaa/**`, `GET /rars/**`, `GET /reviews/**`, `POST /users`, `GET /users/{id}` | без аутентификации |
+| Authenticated | `/me/**`                                                                                                                                               | любой залогиненный |
+| Admin | `/admin/**`                                                                                                                                            | роль `ADMIN` |
 
 **Принцип:** для авторизованных эндпоинтов `userId` **никогда не передаётся в URL** — берётся
 из токена через `@AuthenticationPrincipal UserPrincipal principal`.

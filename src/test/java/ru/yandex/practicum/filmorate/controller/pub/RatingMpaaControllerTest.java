@@ -22,25 +22,25 @@ class RatingMpaaControllerTest {
     @Autowired private MockMvc mockMvc;
 
     @Test
-    @DisplayName("GET /mpa → 200 и 5 рейтингов")
+    @DisplayName("GET /mpaa → 200 и 5 рейтингов")
     void findAll_Should_ReturnAll_Test() throws Exception {
-        mockMvc.perform(get("/mpa"))
+        mockMvc.perform(get("/mpaa"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(5)));
     }
 
     @Test
-    @DisplayName("GET /mpa/{id}: существующий → 200")
+    @DisplayName("GET /mpaa/{id}: существующий → 200")
     void findById_Should_Return_Test() throws Exception {
-        mockMvc.perform(get("/mpa/{id}", 1L))
+        mockMvc.perform(get("/mpaa/{id}", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(1));
     }
 
     @Test
-    @DisplayName("GET /mpa/{id}: несуществующий → 404")
+    @DisplayName("GET /mpaa/{id}: несуществующий → 404")
     void findById_Should_ReturnNotFound_Test() throws Exception {
-        mockMvc.perform(get("/mpa/{id}", 999L))
+        mockMvc.perform(get("/mpaa/{id}", 999L))
                 .andExpect(status().isNotFound());
     }
 }

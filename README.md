@@ -50,7 +50,7 @@ java -jar target/filmorate-0.0.1-SNAPSHOT.jar
 ```bash
 curl http://localhost:8080/films?from=0&size=10
 curl http://localhost:8080/genres
-curl http://localhost:8080/mpa
+curl http://localhost:8080/mpaa
 curl http://localhost:8080/rars
 ```
 

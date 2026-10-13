@@ -14,7 +14,7 @@ import java.util.List;
 
 @Validated
 @RestController
-@RequestMapping("/mpa")
+@RequestMapping("/mpaa")
 public class RatingMpaaController {
     private final RatingMpaaService ratingMpaaService;
 

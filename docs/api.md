@@ -230,8 +230,8 @@ curl -X POST http://localhost:8080/me/reviews \
 |---|---|---|
 | `GET` | `/genres` | `200 OK` + `[GenreDto]` |
 | `GET` | `/genres/{genreId}` | `200 OK` + `GenreDto` |
-| `GET` | `/mpa` | `200 OK` + `[RatingMpaaDto]` |
-| `GET` | `/mpa/{ratingId}` | `200 OK` + `RatingMpaaDto` |
+| `GET` | `/mpaa` | `200 OK` + `[RatingMpaaDto]` |
+| `GET` | `/mpaa/{ratingId}` | `200 OK` + `RatingMpaaDto` |
 | `GET` | `/rars` | `200 OK` + `[RatingRarsDto]` |
 | `GET` | `/rars/{ratingId}` | `200 OK` + `RatingRarsDto` |
 | `GET` | `/directors` | `200 OK` + `[DirectorDto]` |
