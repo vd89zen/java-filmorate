@@ -9,10 +9,10 @@ import java.sql.SQLException;
 @Component
 public class RatingMpaaRowMapper implements RowMapper<RatingMpaa> {
     @Override
-    public RatingMpaa mapRow(ResultSet resultSet, int rowNum) throws SQLException {
+    public RatingMpaa mapRow(ResultSet rs, int rowNum) throws SQLException {
         RatingMpaa rating = new RatingMpaa();
-        rating.setId(resultSet.getLong("id"));
-        rating.setName(resultSet.getString("name"));
+        rating.setId(rs.getLong("id"));
+        rating.setName(rs.getString("name"));
         return rating;
     }
 }

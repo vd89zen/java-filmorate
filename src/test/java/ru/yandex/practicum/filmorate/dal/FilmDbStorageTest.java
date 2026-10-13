@@ -7,12 +7,12 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import ru.yandex.practicum.filmorate.dto.RatingMpaaId;
+import ru.yandex.practicum.filmorate.dto.RatingRarsId;
 import ru.yandex.practicum.filmorate.dto.SearchRequest;
 import ru.yandex.practicum.filmorate.model.Director;
 import ru.yandex.practicum.filmorate.model.Film;
 import ru.yandex.practicum.filmorate.model.User;
 import ru.yandex.practicum.filmorate.model.enums.Role;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -121,6 +121,7 @@ class FilmDbStorageTest {
                     .releaseDate(savedFilm.getReleaseDate())
                     .duration(savedFilm.getDuration())
                     .mpa(savedFilm.getMpa())
+                    .rars(savedFilm.getRars())
                     .build();
 
             updatedFilm.setName("The Matrix: Reloaded");
@@ -300,6 +301,91 @@ class FilmDbStorageTest {
     }
 
     @Nested
+    @DisplayName("Тесты рейтингов (mpa и rars)")
+    class RatingsTests {
+
+        @Test
+        @DisplayName("Создание только с RARS: mpa == null, rars заполнен")
+        void create_OnlyRars_Should_PersistNullMpa_Test() {
+            Film film = Film.builder()
+                    .name("Russian Film")
+                    .description("desc")
+                    .releaseDate(LocalDate.of(2000, 1, 1))
+                    .duration(120)
+                    .mpa(null)
+                    .rars(new RatingRarsId(3L))
+                    .build();
+
+            Film saved = filmStorage.create(film);
+
+            Film fromDb = filmStorage.findById(saved.getId()).orElseThrow();
+            assertThat(fromDb.getMpa()).isNull();
+            assertThat(fromDb.getRars()).isNotNull();
+            assertThat(fromDb.getRars().getId()).isEqualTo(3L);
+        }
+
+        @Test
+        @DisplayName("Создание с только MPAA: rars == null, mpa заполнен")
+        void create_OnlyMpa_Should_PersistNullRars_Test() {
+            Film film = Film.builder()
+                    .name("US Film")
+                    .description("desc")
+                    .releaseDate(LocalDate.of(2000, 1, 1))
+                    .duration(120)
+                    .mpa(new RatingMpaaId(2L))
+                    .rars(null)
+                    .build();
+
+            Film saved = filmStorage.create(film);
+
+            Film fromDb = filmStorage.findById(saved.getId()).orElseThrow();
+            assertThat(fromDb.getMpa()).isNotNull();
+            assertThat(fromDb.getMpa().getId()).isEqualTo(2L);
+            assertThat(fromDb.getRars()).isNull();
+        }
+
+        @Test
+        @DisplayName("Создание с обоими рейтингами: оба сохранены")
+        void create_BothRatings_Should_PersistBoth_Test() {
+            Film film = Film.builder()
+                    .name("Both")
+                    .description("desc")
+                    .releaseDate(LocalDate.of(2000, 1, 1))
+                    .duration(120)
+                    .mpa(new RatingMpaaId(1L))
+                    .rars(new RatingRarsId(2L))
+                    .build();
+
+            Film saved = filmStorage.create(film);
+
+            Film fromDb = filmStorage.findById(saved.getId()).orElseThrow();
+            assertThat(fromDb.getMpa().getId()).isEqualTo(1L);
+            assertThat(fromDb.getRars().getId()).isEqualTo(2L);
+        }
+
+        @Test
+        @DisplayName("Обновление: смена mpa на null, rars на значение")
+        void update_Should_ChangeMpaToNull_Test() {
+            Film film = Film.builder()
+                    .name("Film")
+                    .description("desc")
+                    .releaseDate(LocalDate.of(2000, 1, 1))
+                    .duration(120)
+                    .mpa(new RatingMpaaId(1L))
+                    .build();
+            Film saved = filmStorage.create(film);
+
+            saved.setMpa(null);
+            saved.setRars(new RatingRarsId(4L));
+            filmStorage.update(saved);
+
+            Film fromDb = filmStorage.findById(saved.getId()).orElseThrow();
+            assertThat(fromDb.getMpa()).isNull();
+            assertThat(fromDb.getRars().getId()).isEqualTo(4L);
+        }
+    }
+
+    @Nested
     @DisplayName("Тесты search()")
     class SearchTests {
 
@@ -324,7 +410,8 @@ class FilmDbStorageTest {
             film3 = filmStorage.create(Film.builder()
                     .name("Dune").description("Desert planet")
                     .releaseDate(LocalDate.of(2021, 9, 3))
-                    .duration(155).mpa(new RatingMpaaId(2L)).build()).getId();
+                    .duration(155).mpa(new RatingMpaaId(2L))
+                    .rars(new RatingRarsId(4L)).build()).getId();
 
             jdbcTemplate.update("INSERT INTO film_directors (film_id, director_id) VALUES (?, ?)",
                     film1, directorNolan);
@@ -423,7 +510,6 @@ class FilmDbStorageTest {
             r.setDurationFrom(150);
             r.setDurationTo(160);
 
-            // film1=148 — не попадает, film2=169 — не попадает, film3=155 — попадает
             assertThat(filmStorage.search(r)).extracting(Film::getId)
                     .containsExactly(film3);
         }
@@ -446,6 +532,25 @@ class FilmDbStorageTest {
 
             assertThat(filmStorage.search(r)).extracting(Film::getId)
                     .containsExactlyInAnyOrder(film1, film2, film3);
+        }
+
+        @Test
+        @DisplayName("Фильтр по rarsIds: находит только фильмы с этим RARS")
+        void search_Should_FilterByRars_Test() {
+            SearchRequest r = newRequest();
+            r.setRarsIds(Set.of(4L));
+
+            assertThat(filmStorage.search(r)).extracting(Film::getId)
+                    .containsExactly(film3);
+        }
+
+        @Test
+        @DisplayName("Фильтр по rarsIds: несуществующий id → пусто")
+        void search_Should_ReturnEmpty_ForMissingRars_Test() {
+            SearchRequest r = newRequest();
+            r.setRarsIds(Set.of(99L));
+
+            assertThat(filmStorage.search(r)).isEmpty();
         }
 
         @Test
@@ -503,7 +608,6 @@ class FilmDbStorageTest {
             r.setQuery("100%");
             r.setBy(Set.of("title"));
 
-            // Ни один фильм не содержит "100%" буквально — ожидаем пусто, не «всё подряд»
             assertThat(filmStorage.search(r)).isEmpty();
         }
 

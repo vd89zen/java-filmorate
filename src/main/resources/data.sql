@@ -24,6 +24,18 @@ SELECT 'R' WHERE NOT EXISTS (SELECT 1 FROM rating_mpaa WHERE name = 'R');
 INSERT INTO rating_mpaa (name)
 SELECT 'NC-17' WHERE NOT EXISTS (SELECT 1 FROM rating_mpaa WHERE name = 'NC-17');
 
+-- Заполняем таблицу rating_rars (если записи ещё отсутствуют)
+INSERT INTO rating_rars (name)
+SELECT '0+' WHERE NOT EXISTS (SELECT 1 FROM rating_rars WHERE name = '0+');
+INSERT INTO rating_rars (name)
+SELECT '6+' WHERE NOT EXISTS (SELECT 1 FROM rating_rars WHERE name = '6+');
+INSERT INTO rating_rars (name)
+SELECT '12+' WHERE NOT EXISTS (SELECT 1 FROM rating_rars WHERE name = '12+');
+INSERT INTO rating_rars (name)
+SELECT '16+' WHERE NOT EXISTS (SELECT 1 FROM rating_rars WHERE name = '16+');
+INSERT INTO rating_rars (name)
+SELECT '18+' WHERE NOT EXISTS (SELECT 1 FROM rating_rars WHERE name = '18+');
+
 -- Заполняем таблицу event_types (если записи ещё отсутствуют)
 INSERT INTO event_types (id, name)
 SELECT 1, 'LIKE' WHERE NOT EXISTS (SELECT 1 FROM event_types WHERE id = 1);

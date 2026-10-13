@@ -110,10 +110,49 @@ class FilmServiceTest {
         }
 
         @Test
+        @DisplayName("Создание с только RARS: mpa == null, rars заполнен")
+        void create_Should_AcceptOnlyRars_Test() {
+            NewFilmRequest req = newFilmRequest("Russian Film");
+            req.setMpa(null);
+            req.setRars(new RatingRarsId(3L));
+
+            FilmDto created = filmService.create(req);
+
+            assertThat(created.getMpa()).isNull();
+            assertThat(created.getRars()).isNotNull();
+            assertThat(created.getRars().getId()).isEqualTo(3L);
+            assertThat(created.getRars().getName()).isNotBlank();
+        }
+
+        @Test
+        @DisplayName("Создание с обоими рейтингами")
+        void create_Should_AcceptBothRatings_Test() {
+            NewFilmRequest req = newFilmRequest("Both");
+            req.setMpa(new RatingMpaaId(1L));
+            req.setRars(new RatingRarsId(2L));
+
+            FilmDto created = filmService.create(req);
+
+            assertThat(created.getMpa().getId()).isEqualTo(1L);
+            assertThat(created.getRars().getId()).isEqualTo(2L);
+        }
+
+        @Test
         @DisplayName("Несуществующий режиссёр → NotFoundException")
         void create_Should_ThrowNotFound_ForMissingDirector_Test() {
             NewFilmRequest req = newFilmRequest("Film");
             req.setDirectors(Set.of(new DirectorId(999L)));
+
+            assertThatThrownBy(() -> filmService.create(req))
+                    .isInstanceOf(NotFoundException.class);
+        }
+
+        @Test
+        @DisplayName("Несуществующий RARS → NotFoundException")
+        void create_Should_ThrowNotFound_ForMissingRars_Test() {
+            NewFilmRequest req = newFilmRequest("Film");
+            req.setMpa(null);
+            req.setRars(new RatingRarsId(999L));
 
             assertThatThrownBy(() -> filmService.create(req))
                     .isInstanceOf(NotFoundException.class);
@@ -167,6 +206,22 @@ class FilmServiceTest {
         }
 
         @Test
+        @DisplayName("Обновление только rars")
+        void update_Should_ChangeOnlyRars_Test() {
+            NewFilmRequest create = newFilmRequest("Film");
+            FilmDto created = filmService.create(create);   // создан с mpa=1
+
+            UpdateFilmRequest req = new UpdateFilmRequest();
+            req.setId(created.getId());
+            req.setRars(new RatingRarsId(3L));
+
+            FilmDto updated = filmService.update(req);
+
+            assertThat(updated.getRars().getId()).isEqualTo(3L);
+            assertThat(updated.getMpa().getId()).isEqualTo(1L);  // не менялся
+        }
+
+        @Test
         @DisplayName("Несуществующий id → NotFoundException")
         void update_Should_ThrowNotFound_Test() {
             UpdateFilmRequest req = new UpdateFilmRequest();
@@ -193,6 +248,20 @@ class FilmServiceTest {
         }
 
         @Test
+        @DisplayName("findById: фильм с только RARS отдаёт mpa == null")
+        void findById_Should_ReturnNullMpa_WhenOnlyRars_Test() {
+            NewFilmRequest req = newFilmRequest("Film");
+            req.setMpa(null);
+            req.setRars(new RatingRarsId(4L));
+
+            FilmDto created = filmService.create(req);
+            FilmDto found = filmService.findById(created.getId());
+
+            assertThat(found.getMpa()).isNull();
+            assertThat(found.getRars().getId()).isEqualTo(4L);
+        }
+
+        @Test
         @DisplayName("findById: несуществующий → NotFoundException")
         void findById_Should_ThrowNotFound_Test() {
             assertThatThrownBy(() -> filmService.findById(999L))
@@ -214,6 +283,21 @@ class FilmServiceTest {
         @DisplayName("findAll: пустая страница")
         void findAll_Should_ReturnEmpty_WhenNoFilms_Test() {
             assertThat(filmService.findAll(0, 10)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("findAll: обогащает rars для всех фильмов")
+        void findAll_Should_EnrichRars_Test() {
+            NewFilmRequest req = newFilmRequest("F1");
+            req.setMpa(null);
+            req.setRars(new RatingRarsId(1L));
+            filmService.create(req);
+
+            List<FilmDto> all = filmService.findAll(0, 10);
+
+            assertThat(all).hasSize(1);
+            assertThat(all.get(0).getMpa()).isNull();
+            assertThat(all.get(0).getRars().getName()).isNotBlank();
         }
     }
 
@@ -278,8 +362,8 @@ class FilmServiceTest {
             List<FilmDto> top = filmService.getTopPopularFilms(10, null, null);
 
             assertThat(top).hasSize(2);
-            assertThat(top.get(0).getId()).isEqualTo(f2.getId());   // 2 лайка
-            assertThat(top.get(1).getId()).isEqualTo(f1.getId());   // 1 лайк
+            assertThat(top.get(0).getId()).isEqualTo(f2.getId());
+            assertThat(top.get(1).getId()).isEqualTo(f1.getId());
         }
 
         @Test
@@ -398,7 +482,7 @@ class FilmServiceTest {
 
         private SearchRequest base() {
             return SearchRequest.builder()
-                    .query(null).by(Set.of()).mpaIds(Set.of())
+                    .query(null).by(Set.of()).mpaIds(Set.of()).rarsIds(Set.of())
                     .from(0).size(10)
                     .build();
         }
@@ -494,6 +578,25 @@ class FilmServiceTest {
         }
 
         @Test
+        @DisplayName("Фильтр по rarsIds: находит нужный фильм")
+        void search_Should_FilterByRars_Test() {
+            NewFilmRequest req = newFilmRequest("WithRars");
+            req.setMpa(null);
+            req.setRars(new RatingRarsId(3L));
+            filmService.create(req);
+
+            filmService.create(newFilmRequest("WithoutRars"));
+
+            SearchRequest r = base();
+            r.setRarsIds(Set.of(3L));
+
+            List<FilmDto> result = filmService.search(r);
+            assertThat(result).hasSize(1);
+            assertThat(result.get(0).getRars().getId()).isEqualTo(3L);
+            assertThat(result.get(0).getMpa()).isNull();
+        }
+
+        @Test
         @DisplayName("Без параметров — ведёт себя как findAll")
         void search_Should_ActAsFindAll_WhenNoParams_Test() {
             filmService.create(newFilmRequest("A"));
@@ -510,7 +613,6 @@ class FilmServiceTest {
         @Test
         @DisplayName("Рекомендации: возвращает обогащённые FilmDto")
         void getRecommendations_Should_ReturnEnrichedFilmDto_Test() {
-            // Создаём двух пользователей и фильмы
             Long userA = userService.create(newUserRequest("a@mail.com", "a")).getId();
             Long userB = userService.create(newUserRequest("b@mail.com", "b")).getId();
 
@@ -518,11 +620,9 @@ class FilmServiceTest {
             FilmDto film2 = filmService.create(newFilmRequest("Film2"));
             FilmDto film3 = filmService.create(newFilmRequest("Film3"));
 
-            // userA лайкнул film1, film2
             filmService.likeFilm(film1.getId(), userA);
             filmService.likeFilm(film2.getId(), userA);
 
-            // userB лайкнул film1, film2, film3 — пересечение 2
             filmService.likeFilm(film1.getId(), userB);
             filmService.likeFilm(film2.getId(), userB);
             filmService.likeFilm(film3.getId(), userB);
@@ -531,7 +631,6 @@ class FilmServiceTest {
 
             assertThat(recommendations).hasSize(1);
             assertThat(recommendations.get(0).getId()).isEqualTo(film3.getId());
-            // Проверяем, что DTO обогащён
             assertThat(recommendations.get(0).getMpa()).isNotNull();
             assertThat(recommendations.get(0).getLikesCount()).isEqualTo(1);
         }

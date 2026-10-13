@@ -16,6 +16,7 @@ public class FilmDto {
     private LocalDate releaseDate;
     private Integer duration;
     private RatingMpaaDto mpa;
+    private RatingRarsDto rars;
     @Builder.Default
     private Set<GenreDto> genres = new TreeSet<>(Comparator.comparing(GenreDto::getId));
     private Integer likesCount;

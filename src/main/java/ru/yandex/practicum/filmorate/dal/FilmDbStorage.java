@@ -15,44 +15,44 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
     private static final String DELETE_FILM_QUERY = "DELETE FROM films WHERE id = ?";
     private static final String IS_FILM_EXISTS_QUERY = "SELECT EXISTS(SELECT 1 FROM films WHERE id = ? LIMIT 1)";
     private static final String FIND_ALL_FILMS_PAGINATED_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         FROM films f
         ORDER BY f.id
         LIMIT ? OFFSET ?
         """;
     private static final String FIND_FILM_BY_ID_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         FROM films f
         WHERE f.id = ?
         """;
     private static final String FIND_FILMS_BY_IDS_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         FROM films f
         WHERE f.id IN (:filmsIds)
         """;
     private static final String INSERT_FILM_QUERY = """
-        INSERT INTO films(name, description, release_date, duration, rating_mpaa_id)
-        VALUES (?, ?, ?, ?, ?)
+        INSERT INTO films(name, description, release_date, duration, rating_mpaa_id, rating_rars_id)
+        VALUES (?, ?, ?, ?, ?, ?)
         """;
     private static final String UPDATE_FILM_QUERY = """
         UPDATE films
-        SET name = ?, description = ?, release_date = ?, duration = ?, rating_mpaa_id = ?
+        SET name = ?, description = ?, release_date = ?, duration = ?, rating_mpaa_id = ?, rating_rars_id = ?
         WHERE id = ?
         """;
     private static final String FIND_FILMS_BY_DIRECTOR_SORTED_BY_YEAR_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         FROM films f
         JOIN film_directors fd ON fd.film_id = f.id
         WHERE fd.director_id = ?
         ORDER BY f.release_date ASC, f.id ASC
         """;
     private static final String FIND_FILMS_BY_DIRECTOR_SORTED_BY_LIKES_QUERY = """
-        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         FROM films f
         JOIN film_directors fd ON fd.film_id = f.id
         LEFT JOIN film_likes fl ON fl.film_id = f.id
         WHERE fd.director_id = ?
-        GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+        GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
         ORDER BY COUNT(fl.user_id) DESC, f.id ASC
         """;
 
@@ -69,7 +69,8 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
                 newFilm.getDescription(),
                 newFilm.getReleaseDate(),
                 newFilm.getDuration(),
-                newFilm.getMpa().getId());
+                newFilm.getMpa() == null ? null : newFilm.getMpa().getId(),
+                newFilm.getRars() == null ? null : newFilm.getRars().getId());
 
         newFilm.setId(returnedId);
         return newFilm;
@@ -81,7 +82,8 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
                 updatingFilm.getDescription(),
                 updatingFilm.getReleaseDate(),
                 updatingFilm.getDuration(),
-                updatingFilm.getMpa().getId(),
+                updatingFilm.getMpa() == null ? null : updatingFilm.getMpa().getId(),
+                updatingFilm.getRars() == null ? null : updatingFilm.getRars().getId(),
                 updatingFilm.getId());
     }
 
@@ -97,11 +99,6 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
         return delete(DELETE_FILM_QUERY, filmId);
     }
 
-    /**
-     * Возвращает фильмы по набору id.
-     * <p>Порядок результата НЕ гарантирован. Если порядок важен,
-     * восстанавливайте его самостоятельно по исходному списку id.
-     */
     public List<Film> findBySeveralIds(List<Long> filmsIds) {
         MapSqlParameterSource param = new MapSqlParameterSource("filmsIds", filmsIds);
         return namedJdbc.query(FIND_FILMS_BY_IDS_QUERY, param, mapper);
@@ -122,7 +119,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
 
     public List<Film> search(SearchRequest request) {
         StringBuilder sql = new StringBuilder("""
-            SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id
+            SELECT f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id
             FROM films f
             LEFT JOIN film_likes fl ON fl.film_id = f.id
             """);
@@ -134,12 +131,13 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
         appendYearCondition(request, conditions, params);
         appendDurationCondition(request, conditions, params);
         appendMpaCondition(request, conditions, params);
+        appendRarsCondition(request, conditions, params);
 
-        if (!conditions.isEmpty()) {
+        if (conditions.isEmpty() == false) {
             sql.append(" WHERE ").append(String.join(" AND ", conditions));
         }
 
-        sql.append(" GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id");
+        sql.append(" GROUP BY f.id, f.name, f.description, f.release_date, f.duration, f.rating_mpaa_id, f.rating_rars_id");
         sql.append(" ORDER BY COUNT(fl.user_id) DESC, f.id ASC");
         sql.append(" LIMIT :limit OFFSET :offset");
 
@@ -176,7 +174,7 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
                 )
                 """);
         }
-        if (!orParts.isEmpty()) {
+        if (orParts.isEmpty() == false) {
             conditions.add("(" + String.join(" OR ", orParts) + ")");
         }
     }
@@ -218,16 +216,21 @@ public class FilmDbStorage extends BaseDbStorage<Film> {
     private void appendMpaCondition(SearchRequest request, List<String> conditions,
                                     MapSqlParameterSource params) {
         Set<Long> mpaIds = request.getMpaIds();
-        if (mpaIds != null && !mpaIds.isEmpty()) {
+        if (mpaIds != null && mpaIds.isEmpty() == false) {
             conditions.add("f.rating_mpaa_id IN (:mpaIds)");
             params.addValue("mpaIds", mpaIds);
         }
     }
 
-    /**
-     * Экранирует спецсимволы LIKE (%, _, !), чтобы пользовательский ввод
-     * трактовался буквально. Символ '!' выбран как ESCAPE в SQL.
-     */
+    private void appendRarsCondition(SearchRequest request, List<String> conditions,
+                                     MapSqlParameterSource params) {
+        Set<Long> rarsIds = request.getRarsIds();
+        if (rarsIds != null && rarsIds.isEmpty() == false) {
+            conditions.add("f.rating_rars_id IN (:rarsIds)");
+            params.addValue("rarsIds", rarsIds);
+        }
+    }
+
     private static String escapeLike(String value) {
         return value
                 .replace("!", "!!")

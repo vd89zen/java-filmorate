@@ -76,10 +76,27 @@ Email уникален.
 **Фильмы режиссёра:** `sortBy=year` (возрастание даты) или `likes` (убывание лайков).
 Несуществующий режиссёр → `404`, `sortBy=bad` → `400`.
 
+**Рейтинги в `FilmDto`:**
+
+У фильма может быть **не более одного** рейтинга каждой системы: MPAA и RARS.
+Оба поля опциональны, но при создании (см. раздел Admin) требуется **хотя бы один**.
+
+```json
+{
+  "id": 1,
+  "name": "Inception",
+  "mpa":  { "id": 3, "name": "PG-13" },
+  "rars": { "id": 4, "name": "16+" }
+}
+```
+
+Если у фильма нет рейтинга в какой-то системе, соответствующее поле в ответе отсутствует
+(`mpa: null` или `rars: null`).
+
 **Поиск:**
 
 ```http
-GET /films/search?query=нолан&by=director,title&yearFrom=2000&yearTo=2020&mpaIds=2,3&from=0&size=10
+GET /films/search?query=нолан&by=director,title&yearFrom=2000&yearTo=2020&mpaIds=2,3&rarsIds=4,5&from=0&size=10
 ```
 
 | Параметр | Описание |
@@ -90,7 +107,8 @@ GET /films/search?query=нолан&by=director,title&yearFrom=2000&yearTo=2020&m
 | `yearFrom`/`yearTo` | Диапазон годов включительно |
 | `duration` | Точная длительность (мин) |
 | `durationFrom`/`durationTo` | Диапазон длительностей |
-| `mpaIds` | Список id через запятую |
+| `mpaIds` | Список id рейтингов MPAA через запятую |
+| `rarsIds` | Список id рейтингов RARS через запятую |
 | `from`/`size` | Пагинация |
 
 Правила:
@@ -100,6 +118,8 @@ GET /films/search?query=нолан&by=director,title&yearFrom=2000&yearTo=2020&m
 - `duration` и `durationFrom`/`durationTo` взаимоисключающие.
 - `by` без `query` → `400`.
 - Спецсимволы LIKE (`%`, `_`) трактуются буквально.
+- `mpaIds` и `rarsIds` можно комбинировать: вернутся фильмы, у которых MPAA — из `mpaIds`
+  **и** RARS — из `rarsIds` (оба условия через `AND`).
 - Без параметров — всё, отсортированное по лайкам.
 
 ## Фильмы (`/me`, токен обязателен)
@@ -212,10 +232,20 @@ curl -X POST http://localhost:8080/me/reviews \
 | `GET` | `/genres/{genreId}` | `200 OK` + `GenreDto` |
 | `GET` | `/mpa` | `200 OK` + `[RatingMpaaDto]` |
 | `GET` | `/mpa/{ratingId}` | `200 OK` + `RatingMpaaDto` |
+| `GET` | `/rars` | `200 OK` + `[RatingRarsDto]` |
+| `GET` | `/rars/{ratingId}` | `200 OK` + `RatingRarsDto` |
 | `GET` | `/directors` | `200 OK` + `[DirectorDto]` |
 | `GET` | `/directors/{id}` | `200 OK` + `DirectorDto` |
 
-Предзаполнено: 6 жанров, 5 рейтингов MPA.
+Предзаполнено:
+
+- 6 жанров;
+- 5 рейтингов MPAA (`G`, `PG`, `PG-13`, `R`, `NC-17`);
+- 5 рейтингов RARS (`0+`, `6+`, `12+`, `16+`, `18+`).
+
+MPAA — американская система, RARS (Russian Age Rating System) — российская.
+Это два независимых справочника; у фильма может быть рейтинг из одной, из другой
+или из обеих систем одновременно.
 
 ## Admin (роль `ADMIN`)
 
@@ -226,11 +256,20 @@ curl -X POST http://localhost:8080/me/reviews \
 | `DELETE` | `/admin/films/{filmId}` | `204 No Content` |
 | `GET` | `/admin/users?from=&size=` | `200 OK` + `[UserDto]` |
 | `DELETE` | `/admin/users/{userId}` | `204 No Content` |
+| `PUT` | `/admin/users/{userId}/password` | `204 No Content` |
 | `POST` | `/admin/directors` | `201 Created` + `DirectorDto` |
 | `PUT` | `/admin/directors` | `200 OK` + `DirectorDto` |
 | `DELETE` | `/admin/directors/{id}` | `204 No Content` |
+| `POST` | `/admin/genres` | `201 Created` + `GenreDto` |
+| `PUT` | `/admin/genres` | `200 OK` + `GenreDto` |
+| `DELETE` | `/admin/genres/{id}` | `204 No Content` |
 
 **Создание фильма:**
+
+Обязательно указать **хотя бы один** рейтинг (MPAA или RARS). Оба опциональны по отдельности,
+но не одновременно.
+
+Только MPAA:
 
 ```bash
 curl -X POST http://localhost:8080/admin/films \
@@ -247,8 +286,37 @@ curl -X POST http://localhost:8080/admin/films \
       }'
 ```
 
-`mpa`, `genres`, `directors` — объекты с полем `id`.
+Только RARS (для российских фильмов):
 
-Имя режиссёра уникально, повтор → `400`.
+```bash
+curl -X POST http://localhost:8080/admin/films \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+        "name": "Левиафан",
+        "description": "...",
+        "releaseDate": "2014-09-05",
+        "duration": 140,
+        "rars": { "id": 4 }
+      }'
+```
+
+Оба рейтинга:
+
+```bash
+-d '{
+      "name": "Дюна",
+      "mpa":  { "id": 3 },
+      "rars": { "id": 4 },
+      ...
+    }'
+```
+
+`mpa`, `rars`, `genres`, `directors` — объекты с полем `id`.
+
+Если не указать ни `mpa`, ни `rars` → `400`.
+
+Имя режиссёра и жанра уникальны, повтор → `400`.
+Нельзя удалить жанр, который используется в фильмах → `400`.
 
 Без токена → `401`. С токеном без `ADMIN` → `403`.

@@ -9,28 +9,30 @@ import ru.yandex.practicum.filmorate.model.Film;
 public final class FilmMapper {
 
     public static Film mapToFilm(NewFilmRequest newFilmRequest) {
-        Film film = Film.builder()
+        return Film.builder()
                 .name(newFilmRequest.getName())
                 .description(newFilmRequest.getDescription())
                 .releaseDate(newFilmRequest.getReleaseDate())
                 .duration(newFilmRequest.getDuration())
                 .mpa(newFilmRequest.getMpa())
+                .rars(newFilmRequest.getRars())
                 .build();
-
-        return film;
     }
 
     public static FilmDto mapToDto(Film film) {
-        FilmDto filmDto = FilmDto.builder()
+        return FilmDto.builder()
                 .id(film.getId())
                 .name(film.getName())
                 .description(film.getDescription())
                 .releaseDate(film.getReleaseDate())
                 .duration(film.getDuration())
-                .mpa(new RatingMpaaDto(film.getMpa().getId(), null))
+                .mpa(film.getMpa() == null
+                        ? null
+                        : new RatingMpaaDto(film.getMpa().getId(), null))
+                .rars(film.getRars() == null
+                        ? null
+                        : new RatingRarsDto(film.getRars().getId(), null))
                 .build();
-
-        return filmDto;
     }
 
     public static void updateFilmFields(Film film, UpdateFilmRequest request) {
@@ -52,6 +54,10 @@ public final class FilmMapper {
 
         if (request.hasMpa()) {
             film.setMpa(request.getMpa());
+        }
+
+        if (request.hasRars()) {
+            film.setRars(request.getRars());
         }
     }
 }
